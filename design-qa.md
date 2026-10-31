@@ -106,3 +106,9 @@ Evidence: [building first](docs/design/guest-building-first.png), [settled angul
 ## Follow-up: Anton wordmark
 
 Switched the hero to the user's selected Anton font at its native 400 weight and removed the previous horizontal compression. The existing entrance sequence and sticky positioning are unchanged. Verified the font loaded, inspected the 672 × 790 preview, and confirmed the full word fits without horizontal overflow at 355 × 767. The guest production build, including TypeScript, passed. Updated evidence: [Anton hero](docs/design/guest-hero-anton.png).
+
+## Follow-up: lighter lettering
+
+The user found Anton too thick. Switched to Antonio Regular (400), which retains a similar tall silhouette with visibly lighter strokes. [Google Fonts describes Antonio as an extension of Anton with additional weights](https://github.com/google/fonts/blob/main/ofl/antonio/DESCRIPTION.en_us.html). Size, entrance timing, and sticky scrolling remain unchanged.
+
+Verified Antonio loaded and inspected the live 672 × 790 preview; the word fits without horizontal overflow. Screenshot export later failed after the preview collapsed, so the earlier screenshots remain historical evidence. The production build and TypeScript check passed with temporary `GOMAXPROCS=1` and `RAYON_NUM_THREADS=1` after Windows memory allocation failures; no build configuration was changed. Temporary browser sizing was reset.
