@@ -16,7 +16,7 @@ em { font-style: normal; }
 .button:hover svg, .round-link:hover svg, .next-stay-link:hover svg { transform: translate(3px, -3px); }
 :focus-visible { outline: 2px solid #267d91; }
 
-/* Floating navigation becomes an opaque surface as the page scrolls. */
+/* Floating navigation stays transparent over the hero, then gains a reading surface. */
 .site-header { position: sticky; top: 0; z-index: 30; background: #f7f8f2; transition: color .3s, background .3s, box-shadow .3s; }
 .site-header.over-hero { position: fixed; inset: 0 0 auto; color: #fff; background: transparent; }
 .site-header.is-solid { background: #f7f8f2f5; color: var(--ink); backdrop-filter: blur(14px); box-shadow: 0 1px 0 #19251c10; }

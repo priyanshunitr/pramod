@@ -10,11 +10,19 @@ export function Layout() {
   const [scrolled, setScrolled] = useState(false);
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    const update = () => setScrolled(window.scrollY > 32);
+    const update = () => {
+      const hero = pathname === '/' ? document.querySelector('.architecture-hero') : null;
+      const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 0;
+      setScrolled(hero ? hero.getBoundingClientRect().bottom <= headerHeight : window.scrollY > 32);
+    };
     update();
     window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, []);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [pathname]);
   useEffect(() => {
     setMenuOpen(false);
     if (hash) requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }));
