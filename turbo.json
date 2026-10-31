@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [".env", ".env.example"],
+  "globalEnv": ["NODE_ENV", "API_PORT", "FRONTEND_ORIGIN", "RECEPTION_ORIGIN", "OWNER_ORIGIN", "VITE_*"],
+  "tasks": {
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
+    "typecheck": { "dependsOn": ["^typecheck"] },
+    "test": { "dependsOn": ["^typecheck"] },
+    "dev": { "cache": false, "persistent": true, "passThroughEnv": ["DATABASE_URL"] }
+  }
+}

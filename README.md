@@ -1,6 +1,6 @@
 # Pramod hotel
 
-A hotel application for Pramod, initially serving a single property with room to expand. The stack is React + TypeScript + Vite on the frontend, Express + TypeScript on the backend, and PostgreSQL accessed through `pg`.
+A hotel application for Pramod, initially serving a single property with room to expand. npm workspaces and Turborepo coordinate React + TypeScript + Vite frontends, an Express + TypeScript API, and PostgreSQL accessed through `pg`.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ npm run dev
 
 `setup` creates the ignored root `.env` from `.env.example` without overwriting an existing file. The database starts in Docker, while the frontend and backend run directly on your machine with automatic reload. The frontend proxies `/api` requests to Express.
 
-The optional demo seed creates one placeholder hotel, three room types, and three rooms. It is safe to run again without duplicating or overwriting these records. No accounts or passwords are seeded. The frontend uses this catalog and the Pramod branding configured in `frontend/src/config/hotel.ts`. Without the seed, room sections show a retry message.
+The optional demo seed creates one placeholder hotel, three room types, and three rooms. It is safe to run again without duplicating or overwriting these records. No accounts or passwords are seeded. The frontend uses this catalog and the Pramod branding configured in `apps/guest/src/config/hotel.ts`. Without the seed, room sections show a retry message.
 
 ## Frontend experience
 
@@ -48,12 +48,12 @@ Search checks PostgreSQL inventory for the requested dates. Reservation confirma
 
 Saved stay plans remain browser-local and do not hold inventory. Confirmed reservations are stored in PostgreSQL and appear under the customer's account. The frontend sends a booking idempotency key and retains it in session storage until the request succeeds, so retrying an interrupted request returns the original reservation. Account credentials and session tokens are never stored in local storage.
 
-The layout includes responsive navigation, keyboard focus indicators, loading/error/empty states, and a gallery dialog with Escape/arrow-key support. The current photos and amenities are illustrative; replace them with the hotel's confirmed content before launch. Image sources and licensing are recorded in `frontend/public/images/credits.txt`.
+The layout includes responsive navigation, keyboard focus indicators, loading/error/empty states, and a gallery dialog with Escape/arrow-key support. The current photos and amenities are illustrative; replace them with the hotel's confirmed content before launch. Image sources and licensing are recorded in `apps/guest/public/images/credits.txt`.
 
 ## Project structure
 
 ```text
-frontend/
+apps/guest/
   src/
     App.tsx                  Application routes
     components/              Shared navigation, search, and room components
@@ -64,7 +64,7 @@ frontend/
     lib/stay.ts              Calendar-date validation and saved-plan helpers
     styles.css               Responsive styles
   vite.config.ts             Frontend server and API proxy
-backend/
+apps/api/
   src/
     app.ts                   Express routes and middleware
     server.ts                Server lifecycle
@@ -83,6 +83,8 @@ compose.yaml                 PostgreSQL service and persistent volume
 
 ## Commands
 
+Turborepo runs development tasks in parallel and caches builds, type checks, and unit tests. Database migrations, seeds, owner provisioning, and integration tests run directly and are never cached. Use `npm run dev -- --filter=@hotel/guest --filter=@hotel/api` to start only the guest site and API. Each app remains independently buildable through its npm workspace.
+
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Run the frontend and backend together |
@@ -96,10 +98,10 @@ compose.yaml                 PostgreSQL service and persistent volume
 | `npm run db:logs` | Follow database logs |
 | `npm run db:migrate` | Apply pending SQL migrations |
 | `npm run db:seed` | Add the optional local demo data |
-| `npm run start -w backend` | Run the compiled API after building |
-| `npm run preview -w frontend` | Preview the built frontend on port 4173 |
+| `npm run start -w @hotel/api` | Run the compiled API after building |
+| `npm run preview -w @hotel/guest` | Preview the built frontend on port 4173 |
 
-The frontend build is written to `frontend/dist`; the backend build is written to `backend/dist`. To inspect a production build locally, run the compiled API and frontend preview in separate terminals. Vite preview is a local build check, not a production hosting server.
+The frontend build is written to `apps/guest/dist`; the backend build is written to `apps/api/dist`. To inspect a production build locally, run the compiled API and frontend preview in separate terminals. Vite preview is a local build check, not a production hosting server.
 
 ## Configuration
 
@@ -128,7 +130,7 @@ The account migration adds password hashes, hashed opaque sessions, shared rate 
 
 Cancellation releases the allocation in the same transaction. Check-in requires an eligible date, a clean room in service, and no previous guest still checked in. Check-out marks the room dirty. Permanent out-of-service rooms are excluded from availability; scheduled maintenance blocks and room moves are future work.
 
-Add future migrations as numbered SQL files under `backend/migrations`. The runner serializes migrations, applies them transactionally, and records checksums. Never edit an already applied migration; add another file instead. The database migration account needs permission to install `btree_gist`.
+Add future migrations as numbered SQL files under `apps/api/migrations`. The runner serializes migrations, applies them transactionally, and records checksums. Never edit an already applied migration; add another file instead. The database migration account needs permission to install `btree_gist`.
 
 ## First owner and staff access
 

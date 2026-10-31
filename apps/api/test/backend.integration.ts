@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import pg from 'pg';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: new URL('../../.env', import.meta.url), quiet: true });
+dotenv.config({ path: new URL('../../../.env', import.meta.url), quiet: true });
 if (process.env.NODE_ENV === 'production') throw new Error('Integration tests must not run against a production configuration.');
 if (!process.env.DATABASE_URL) throw new Error('Configure a local DATABASE_URL before running integration tests.');
 const admin = new pg.Pool({ connectionString: process.env.DATABASE_URL });
