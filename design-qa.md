@@ -102,3 +102,7 @@ Verification on 2026-11-01:
 - `npm run build -w @hotel/guest` passed, including TypeScript; browser error logs were empty. The initial Turbo wrapper attempt exited with a Windows process error; direct workspace builds succeeded. `git diff --check` passed.
 
 Evidence: [building first](docs/design/guest-building-first.png), [settled angular hero](docs/design/guest-stable-hero.png), and [transparent navigation beyond the hero](docs/design/guest-transparent-navigation.png).
+
+## Follow-up: Anton wordmark
+
+Switched the hero to the user's selected Anton font at its native 400 weight and removed the previous horizontal compression. The existing entrance sequence and sticky positioning are unchanged. Verified the font loaded, inspected the 672 × 790 preview, and confirmed the full word fits without horizontal overflow at 355 × 767. The guest production build, including TypeScript, passed. Updated evidence: [Anton hero](docs/design/guest-hero-anton.png).

@@ -39,8 +39,8 @@ em { font-style: normal; }
 /* Native sticky positioning keeps the text still without per-frame JS transforms.
    Clip (rather than hidden) preserves the page as its scrolling ancestor. */
 .hero-wordmark-anchor { position: sticky; top: var(--wordmark-top); width: 100%; z-index: 0; overflow: clip; }
-.hero-wordmark { font-family: 'Chakra Petch', 'Arial Narrow', sans-serif; text-align: center; text-transform: uppercase; font-size: clamp(140px, 31vw, 540px); font-weight: 600; line-height: .9; letter-spacing: -.025em; }
-.hero-lettering { position: relative; left: 50%; display: block; width: max-content; white-space: nowrap; transform: translateX(-50%) scaleX(.76); }
+.hero-wordmark { font-family: 'Anton', 'Arial Narrow', sans-serif; text-align: center; text-transform: uppercase; font-size: clamp(140px, 31vw, 540px); font-weight: 400; line-height: .9; letter-spacing: -.025em; }
+.hero-lettering { position: relative; left: 50%; display: block; width: max-content; white-space: nowrap; transform: translateX(-50%); }
 .architecture-hero[data-scene-ready='false'] .hero-wordmark, .architecture-hero[data-scene-ready='false'] .architecture-scene { opacity: 0; }
 /* Wait for the building to settle before lifting the lettering into place.
    Backwards fill hides it during the delay and releases its transform afterwards. */
