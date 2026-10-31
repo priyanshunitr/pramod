@@ -5,6 +5,7 @@ import { hotel } from '../config/hotel';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { BookingList } from '../components/BookingList';
+import { frontendUrl } from '@hotel/api-client';
 
 export function AccountPage() {
   const [params, setParams] = useSearchParams();
@@ -44,7 +45,7 @@ export function AccountPage() {
   if (auth.user) return <div className="container page-content">
     <div className="workspace-heading"><div><p className="eyebrow">YOUR PRAMOD ACCOUNT</p><h1>Welcome, <em>{auth.user.fullName}.</em></h1><p>{auth.user.email}</p></div><button className="button secondary" disabled={busy} onClick={logout}>Sign out</button></div>
     {notice && <p className="form-error" role="alert">{notice}</p>}
-    <div className="account-shortcuts"><Link className="button primary" to="/rooms">Find your next stay <ArrowUpRight size={17} /></Link><Link className="text-link" to="/staff">{auth.memberships.length ? 'Open hotel workspace' : 'Hotel team access'} <ArrowUpRight size={17} /></Link></div>
+    <div className="account-shortcuts"><Link className="button primary" to="/rooms">Find your next stay <ArrowUpRight size={17} /></Link><a className="text-link" href={frontendUrl(auth.memberships.some(item => item.role === 'owner') ? 'owner' : 'reception')}>{auth.memberships.some(item => item.role === 'owner') ? 'Open owner dashboard' : auth.memberships.length ? 'Open reception' : 'Hotel team access'} <ArrowUpRight size={17} /></a></div>
     <h2>Your <em>reservations.</em></h2><BookingList />
   </div>;
 

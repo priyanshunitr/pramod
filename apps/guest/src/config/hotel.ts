@@ -1,5 +1,6 @@
 // Replace this illustrative identity and room presentation with the hotel's own content.
-export const hotel = { name: 'Pramod', descriptor: 'A BOUTIQUE STAY', slug: 'demo-hotel', timezone: 'Asia/Kolkata', heroImage: '/images/hotel-pool.jpg' };
+import { propertySlug } from '@hotel/api-client';
+export const hotel = { name: 'Pramod', descriptor: 'A BOUTIQUE STAY', slug: propertySlug, timezone: 'Asia/Kolkata', heroImage: '/images/hotel-pool.jpg' };
 
 export function roomPresentation(name: string) {
   const collection: Record<string, { image: string; tag: string; bed: string; intro: string }> = {

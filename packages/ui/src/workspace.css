@@ -1,0 +1,40 @@
+.workspace-heading, .workspace-toolbar, .reservation-top { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.workspace-heading h1 { font-size: clamp(2.6rem, 5vw, 4.4rem); }
+.workspace-heading h2 { margin: 0; }
+.workspace-heading p { color: var(--muted, #696f66); }
+.workspace-toolbar { margin: 22px 0; font-size: .85rem; }
+.account-shortcuts { display: flex; align-items: center; flex-wrap: wrap; gap: 25px; margin: 32px 0 60px; }
+.reservation-card, .team-card { background: #fffdf8; border: 1px solid #dedfd4; padding: 25px; margin: 18px 0; border-radius: 8px; }
+.reservation-top { align-items: flex-start; }
+.reservation-top h3 { margin: 14px 0 8px; font-size: 1.9rem; }
+.reservation-top p, .team-card p { font-size: .9rem; line-height: 1.7; overflow-wrap: anywhere; }
+.reservation-top > strong { white-space: nowrap; font-size: 1.2rem; }
+.booking-reference { overflow-wrap: anywhere; color: #72796e; font-size: .76rem; }
+.reservation-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 18px; font-size: .85rem; }
+.reservation-actions .button { padding: 12px 18px; }
+.status-badge { display: inline-flex; padding: 7px 12px; border-radius: 30px; font: 500 .74rem 'DM Sans', sans-serif; background: #f2ecdf; color: #625c48; }
+.status-badge.confirmed, .status-badge.checked_in { background: #e7eee3; color: #3e5843; }
+.status-badge.cancelled { background: #f2e4df; color: #8a4d3a; }
+.workspace-section { margin-top: 64px; border-top: 1px solid #daddd1; padding-top: 38px; }
+.workspace-columns { display: grid; grid-template-columns: 1.2fr 1fr; align-items: start; gap: 50px; margin-top: 28px; }
+.workspace-columns h3 { font-size: 1.65rem; }
+.readiness-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.readiness-grid .team-card { display: grid; gap: 15px; }
+.readiness-grid span { font-size: .85rem; }
+.account-form select, .readiness-grid select, .invitation-code input { width: 100%; border: 1px solid #d6d9ce; background: #fffdf8; color: #283b2b; padding: 13px; border-radius: 3px; font: inherit; }
+.invitation-code { display: grid; gap: 10px; font-size: .8rem; }
+.invitation-code input { font-family: monospace; }
+.save-plan-actions { border-top: 1px solid #daddd1; padding-top: 22px; margin-top: 22px; }
+.booking-success p { line-height: 1.65; }
+.booking-panel .form-error .text-link { display: block; margin-top: 12px; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 800px) {
+  .workspace-columns { grid-template-columns: 1fr; gap: 25px; }
+  .readiness-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 570px) {
+  .workspace-heading, .workspace-toolbar, .reservation-top { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .readiness-grid { grid-template-columns: 1fr; }
+  .reservation-card, .team-card { padding: 20px; }
+  .workspace-heading h1 { overflow-wrap: anywhere; }
+}

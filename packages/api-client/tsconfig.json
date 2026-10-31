@@ -1,0 +1,1 @@
+{ "extends": "@hotel/config/react", "include": ["src"] }

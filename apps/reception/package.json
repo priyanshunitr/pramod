@@ -1,0 +1,28 @@
+{
+  "name": "@hotel/reception",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "^1.66.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^8.5.1",
+    "@hotel/api-client": "0.1.0",
+    "@hotel/ui": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "dotenv": "^17.4.2",
+    "vite": "^8.3.5",
+    "@hotel/config": "0.1.0"
+  }
+}
