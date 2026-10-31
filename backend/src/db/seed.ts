@@ -14,13 +14,13 @@ async function seed() {
       ON CONFLICT DO NOTHING
     `);
     await client.query(`
-      INSERT INTO room_types (id, property_id, name, description, max_guests) VALUES
+      INSERT INTO room_types (id, property_id, name, description, max_guests, nightly_rate_minor) VALUES
         ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001',
-          'Classic Room', 'A comfortable space for a quiet stay.', 2),
+          'Classic Room', 'A comfortable space for a quiet stay.', 2, 450000),
         ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001',
-          'Deluxe Room', 'A little more room to settle in and unwind.', 3),
+          'Deluxe Room', 'A little more room to settle in and unwind.', 3, 650000),
         ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001',
-          'Family Suite', 'Room to spend time together, with space for everyone.', 4)
+          'Family Suite', 'Room to spend time together, with space for everyone.', 4, 950000)
       ON CONFLICT DO NOTHING
     `);
     await client.query(`

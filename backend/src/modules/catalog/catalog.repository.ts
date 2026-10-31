@@ -5,6 +5,7 @@ export interface RoomType {
   name: string;
   description: string;
   maxGuests: number;
+  nightlyRateMinor: number | null;
 }
 
 export interface PropertyCatalog {
@@ -24,7 +25,7 @@ export async function getPropertyCatalog(slug: string): Promise<PropertyCatalog 
   if (!row) return null;
 
   const roomTypes = await pool.query<RoomType>(
-    'SELECT id, name, description, max_guests AS "maxGuests" FROM room_types WHERE property_id = $1 ORDER BY max_guests, name',
+    'SELECT id, name, description, max_guests AS "maxGuests", nightly_rate_minor AS "nightlyRateMinor" FROM room_types WHERE property_id = $1 ORDER BY max_guests, name',
     [row.id],
   );
   return { ...row, roomTypes: roomTypes.rows };

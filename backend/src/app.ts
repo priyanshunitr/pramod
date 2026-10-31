@@ -1,9 +1,12 @@
 import cors from 'cors';
 import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
-import { env } from './config/env.js';
 import { pool } from './db/pool.js';
 import { getPropertyCatalog, type PropertyCatalog } from './modules/catalog/catalog.repository.js';
+import { allowedOrigins, HttpError, protectWrites } from './lib/http.js';
+import { authRouter } from './modules/auth/auth.routes.js';
+import { staffRouter } from './modules/staff/staff.routes.js';
+import { customerBookingRouter, propertyBookingRouter } from './modules/bookings/bookings.routes.js';
 
 interface Dependencies {
   checkDatabase: () => Promise<void>;
@@ -17,8 +20,14 @@ export function createApp(dependencies: Dependencies = {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(cors({ origin: env.FRONTEND_ORIGIN }));
+  app.use(cors({ origin: [...allowedOrigins], credentials: true }));
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api', (_request, response, next) => { response.setHeader('Cache-Control', 'no-store'); next(); });
+  app.use('/api', protectWrites);
+  app.use('/api/auth', authRouter);
+  app.use('/api/properties/:propertyId/staff', staffRouter);
+  app.use('/api/properties/:propertyId', propertyBookingRouter);
+  app.use('/api/bookings', customerBookingRouter);
 
   app.get('/api/health', (_request, response) => {
     response.json({ status: 'ok', service: 'hotel-api' });
@@ -52,6 +61,11 @@ export function createApp(dependencies: Dependencies = {
   });
 
   const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+    if (error instanceof HttpError) {
+      if (error.status === 429) response.setHeader('Retry-After', '900');
+      response.status(error.status).json({ error: error.message });
+      return;
+    }
     if (error?.type === 'entity.parse.failed') {
       response.status(400).json({ error: 'Invalid JSON body.' });
       return;
