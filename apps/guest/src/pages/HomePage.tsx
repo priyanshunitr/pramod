@@ -1,38 +1,76 @@
-import { ArrowDown, ArrowUpRight, BedDouble, Coffee, ConciergeBell, Leaf, Sparkles, Waves, Wifi } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
 import { Link } from 'react-router';
-import { hotel } from '../config/hotel';
+import { formatMoney, hotel, roomPresentation } from '../config/hotel';
 import { StaySearch } from '../components/StaySearch';
-import { RoomCard } from '../components/RoomCard';
 import { CatalogFeedback } from '../components/CatalogFeedback';
+import { Reveal } from '../components/Reveal';
+import { ArchitecturalHero } from '../components/ArchitecturalHero';
 import { useCatalog } from '../context/CatalogContext';
+
+const rateLabel = (minor: number | null, currency?: string) => minor === null ? 'Rate on request' : `From ${formatMoney(minor / 100, currency)} / night`;
 
 export function HomePage() {
   const { property, loading, error } = useCatalog();
-  return <>
-    <section className="hero" aria-labelledby="hero-title">
-      <img className="hero-photo" src={hotel.heroImage} alt="Illustrative hotel pool surrounded by sunlit palm trees" fetchPriority="high" width="2000" height="1333" />
-      <div className="hero-shade" />
-      <div className="hero-copy"><p className="eyebrow">WELCOME TO {hotel.name.toUpperCase()}</p><h1 id="hero-title">Somewhere to<br /><em>slow down.</em></h1><p>Leave the everyday behind.<br />Make room for a stay that feels like you.</p><a className="hero-discover" href="#rooms">Discover your stay <ArrowDown size={17} /></a></div>
-      <div className="hero-caption"><span>THE ART OF FEELING AT HOME</span><span>01 — A DIFFERENT PACE</span></div>
+  const rooms = !loading && !error ? property?.roomTypes ?? [] : [];
+
+  return <div className="hotel-experience">
+    <ArchitecturalHero />
+    <section className="arrival-search container" id="find-a-stay" aria-label="Find your stay">
+      <div className="search-intro"><span className="eyebrow">A FEW DAYS, ALL YOURS.</span><p>Your next pause starts here.</p></div>
+      <StaySearch />
+      <p className="search-note">Choose your dates to check room availability.</p>
     </section>
-    <div className="hero-search container"><StaySearch /><p className="search-note">Start with your dates. Find a room that feels right. <span>Availability is not checked in this preview.</span></p></div>
-    <div className="welcome-strip container"><span><BedDouble size={22} strokeWidth={1.3} /> A thoughtful place to rest</span><span><Leaf size={22} strokeWidth={1.3} /> Space to take it slow</span><span><ConciergeBell size={22} strokeWidth={1.3} /> A warmer kind of welcome</span></div>
-
-    <section className="section container" id="rooms" aria-labelledby="rooms-title"><div className="section-heading"><div><p className="eyebrow">YOUR OWN LITTLE RETREAT</p><h2 id="rooms-title">Find your kind of <em>comfort.</em></h2></div><Link to="/rooms" className="text-link">Explore all rooms <ArrowUpRight size={18} /></Link></div>
-      <CatalogFeedback />
-      {!loading && !error && property && <div className="room-grid">{property.roomTypes.map((room) => <RoomCard key={room.id} room={room} currency={property.currency} />)}</div>}
-      {!loading && !error && property?.roomTypes.length === 0 && <p className="empty-state">Our room collection is being prepared. Please check back soon.</p>}
+    <section className="stay-introduction container" id="about" aria-labelledby="intro-title">
+      <div className="section-kicker"><span>/ A different pace</span><span>Stay a little. Feel a lot.</span></div>
+      <div className="introduction-grid">
+        <Reveal className="introduction-copy">
+          <h2 id="intro-title">Stay.<br />Slow.<br />Savour.<br /><span>Repeat.</span></h2>
+          <p>Good mornings. Long conversations. Nowhere else you need to be. Welcome to your own little corner of {hotel.name}.</p>
+          <Link className="round-link" to="/rooms">Find your kind of comfort <span><ArrowUpRight size={20} /></span></Link>
+        </Reveal>
+        <Reveal className="room-fan" delay={120}>
+          <CatalogFeedback />
+          {rooms.slice(0, 3).map((room, index) => <Link key={room.id} to={`/rooms/${room.id}`} className={`fan-card fan-card-${index}`} aria-label={`Explore ${room.name}`}>
+            <img src={roomPresentation(room.name).image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
+            <div className="fan-card-caption"><span><strong>{room.name}</strong><small>Up to {room.maxGuests} guests · Your space to unwind</small></span><ArrowUpRight size={21} /></div>
+            <div className="fan-card-price">{rateLabel(room.nightlyRateMinor, property?.currency)}</div>
+          </Link>)}
+          {!loading && !error && rooms.length === 0 && <p className="empty-state">Our room collection is being prepared. Please check back soon.</p>}
+          {rooms.length > 0 && <span className="fan-note">A room for every kind of getaway. <ArrowDown size={14} /></span>}
+        </Reveal>
+      </div>
     </section>
-
-    <section className="story-section" id="about" aria-labelledby="story-title"><div className="story-grid container"><div className="story-image"><img src="/images/classic-room.jpg" alt="Illustrative light-filled guest room with warm wooden details" loading="lazy" width="900" height="1000" /><span className="image-caption">THE LITTLE THINGS, THOUGHTFULLY DONE.</span></div><div className="story-copy"><span className="story-symbol" aria-hidden="true"><Sparkles size={34} strokeWidth={1} /></span><p className="eyebrow">MORE THAN A PLACE TO STAY</p><h2 id="story-title">A little pause.<br />A lasting <em>feeling.</em></h2><p>Unhurried mornings. A favourite corner. The simple pleasure of having nowhere else you need to be.</p><p>At {hotel.name}, our idea of a good stay is a simple one: space to settle in, thoughtful details, and a welcome that feels personal.</p><Link to="/gallery" className="text-link">Take a look around <ArrowUpRight size={18} /></Link></div></div></section>
-
-    <section className="section container amenity-section" aria-labelledby="amenity-title"><div className="center-heading"><p className="eyebrow">LITTLE COMFORTS. LOVELY MOMENTS.</p><h2 id="amenity-title">Make yourself <em>at home.</em></h2><p>A glimpse of the experience. Amenities shown are illustrative.</p></div><div className="amenity-grid">{[
-      { Icon: Wifi, title: 'Stay connected', description: 'A little work, a favourite playlist, or a call back home.' },
-      { Icon: Coffee, title: 'Slow mornings', description: 'Start the day with a warm cup and a moment to yourself.' },
-      { Icon: Waves, title: 'Time to unwind', description: 'Blue water, open skies, and an easier pace.' },
-      { Icon: ConciergeBell, title: 'A personal touch', description: 'A welcoming team to help you feel settled.' },
-    ].map(({ Icon, title, description }) => <article key={title}><Icon size={30} strokeWidth={1.2} /><h3>{title}</h3><p>{description}</p></article>)}</div></section>
-
-    <section className="closing-cta"><div className="container"><div><p className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</p><h2>A change of pace<br />looks good <em>on you.</em></h2></div><Link to="/rooms" className="button cream">Find your room <ArrowUpRight size={19} /></Link></div></section>
-  </>;
+    <section className="room-collection" id="rooms" aria-labelledby="collection-title">
+      <div className="container">
+        <div className="section-kicker"><h2 id="collection-title">/ The room collection</h2><span>Make yourself at home.</span></div>
+        <CatalogFeedback />
+        {rooms.map((room, index) => <Reveal key={room.id} delay={index * 70}>
+          <Link to={`/rooms/${room.id}`} className="collection-row" aria-label={`Explore ${room.name}, ${rateLabel(room.nightlyRateMinor, property?.currency)}`}>
+            <span className="collection-index">/ 0{index + 1}</span>
+            <div className="collection-name"><h3>{room.name}</h3><p>Up to {room.maxGuests} guests <span>·</span> {rateLabel(room.nightlyRateMinor, property?.currency)}</p></div>
+            <img className="collection-preview" src={roomPresentation(room.name).image} alt="" width="320" height="240" loading="lazy" />
+            <span className="collection-arrow"><ArrowUpRight size={25} strokeWidth={1.3} /></span>
+          </Link>
+        </Reveal>)}
+        {!loading && !error && rooms.length === 0 && <p className="empty-state">New spaces to settle into are on their way.</p>}
+        <div className="collection-bottom"><p>A little everyday luxury, at your own pace.</p><Link to="/rooms" className="text-link">See rooms & availability <ArrowUpRight size={18} /></Link></div>
+      </div>
+    </section>
+    <section className="life-at-pramod" aria-labelledby="life-title">
+      <img className="life-photo" src={hotel.heroImage} alt="Illustrative palm-lined pool in warm afternoon light" loading="lazy" width="2000" height="1333" />
+      <div className="life-shade" />
+      <div className="life-content container">
+        <div className="section-kicker"><span>/ Life at Pramod</span><span>Little comforts. Lovely moments.</span></div>
+        <Reveal className="life-heading"><h2 id="life-title">Less rush.<br />More living.</h2><Link to="/gallery" className="button glass">Take a look around <ArrowUpRight size={18} /></Link></Reveal>
+        <div className="comfort-notes">{[
+          { Icon: Coffee, title: 'Slow mornings', copy: 'One more cup. No hurry.' },
+          { Icon: Waves, title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
+          { Icon: Wifi, title: 'Stay connected', copy: 'As much, or as little, as you like.' },
+          { Icon: ConciergeBell, title: 'A warm welcome', copy: 'The little things, taken care of.' },
+        ].map(({ Icon, title, copy }, index) => <Reveal key={title} className="comfort-note" delay={index * 80}><Icon size={23} strokeWidth={1.4} /><div><h3>{title}</h3><p>{copy}</p></div></Reveal>)}</div>
+        <p className="experience-note">A glimpse of the experience · Illustrative amenities and photography</p>
+      </div>
+    </section>
+    <section className="next-stay container"><Reveal><span className="eyebrow">SOMEWHERE YOU’LL WANT TO STAY.</span><Link to="/rooms" className="next-stay-link"><h2>See you soon?</h2><span><ArrowUpRight strokeWidth={1.2} /></span></Link><p>Pick your dates. We’ll help you find your place.</p></Reveal></section>
+  </div>;
 }
