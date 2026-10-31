@@ -85,3 +85,20 @@ The user requested faster image-over-text scrolling and taller, narrower letteri
 Verified the font loaded and checked the live layout at a normal 672 × 790 CSS-pixel viewport, desktop 1164 × 655, and phone 355 × 767 (the browser's existing zoom changes the requested viewport dimensions). No horizontal overflow. At 71.82 px scroll, the text layer had moved 64.64 px within the hero, confirming the new 0.9 multiplier. The header remained transparent over the image, also verifying the preceding header fix. A page reload was necessary to replace an older hot-reloaded effect closure before measuring.
 
 Updated visual evidence: [condensed hero](docs/design/guest-hero-condensed.png) and [short-scroll parallax](docs/design/guest-parallax-scroll.png). The earlier desktop/mobile captures above document the original design pass. The guest production build, including TypeScript checking, and `git diff --check` passed for this follow-up.
+
+## Follow-up: stable lettering, sequential entrance, and transparent navigation
+
+The latest user direction supersedes the scroll multiplier and font above. The building enters first over 1.6 seconds; PRAMOD then rises from below over 0.85 seconds. Both animations start from the image load event, with an error fallback so missing artwork cannot leave the heading hidden indefinitely. The heading's entrance transform is released when it finishes. Native sticky positioning holds the wordmark still during scrolling, with the hero clipping it at its boundary. Chakra Petch supplies angular, chamfered corners; a fixed horizontal scale preserves the tall lettering without scroll-driven transforms.
+
+The full-width header remains transparent on the homepage and inner routes. An intersection observer changes only the foreground contrast over dark sections. The navigation pill and expanded mobile menu retain their own reading surfaces.
+
+Verification on 2026-11-01:
+
+- During the building entrance, its measured opacity was 0.608 while the title remained hidden at opacity 0 and translated downward. The title's computed delay was 1.6 seconds, equal to the building's duration. After settling, both outer transforms were `none` and title opacity was 1.
+- At the normal 672 × 790 viewport, the heading's top stayed at exactly 197.5 px for scroll positions 0, 71.82, and 143.64 px. The villa advanced over it without changing the heading opacity.
+- Inspected the final angular lettering at 672 × 790, phone 355 × 767, and desktop 1309 × 818 CSS pixels. The font loaded, the full word fit, and none of these viewports had horizontal overflow. Temporary viewport overrides were reset.
+- Header background stayed `rgba(0, 0, 0, 0)` over the hero, pale introduction, dark collection, and `/rooms`. No full-width backdrop blur or shadow. Foreground switched to white over the collection and dark ink over pale content. Mobile navigation opened, routed to rooms, closed, and reset scroll correctly.
+- Reduced-motion CSS reviewed: immediate visible lettering/building, no entrance animation, and no sticky parallax. OS-level preference emulation was unavailable, so this remains a code-review check.
+- `npm run build -w @hotel/guest` passed, including TypeScript; browser error logs were empty. The initial Turbo wrapper attempt exited with a Windows process error; direct workspace builds succeeded. `git diff --check` passed.
+
+Evidence: [building first](docs/design/guest-building-first.png), [settled angular hero](docs/design/guest-stable-hero.png), and [transparent navigation beyond the hero](docs/design/guest-transparent-navigation.png).

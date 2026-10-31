@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Menu, MoveUpRight, X } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { hotel } from '../config/hotel';
@@ -6,21 +6,30 @@ import { useAuth } from '../context/AuthContext';
 
 export function Layout() {
   const { user } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const { pathname, hash } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [lightHeader, setLightHeader] = useState(pathname === '/');
+  const headerRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const update = () => {
-      const hero = pathname === '/' ? document.querySelector('.architecture-hero') : null;
-      const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 0;
-      setScrolled(hero ? hero.getBoundingClientRect().bottom <= headerHeight : window.scrollY > 32);
+    const sections = [...document.querySelectorAll('[data-header-tone="light"]')];
+    let observer: IntersectionObserver | undefined;
+    const configure = () => {
+      observer?.disconnect();
+      const midpoint = Math.min((headerRef.current?.firstElementChild?.clientHeight ?? 80) / 2, window.innerHeight - 1);
+      const update = () => setLightHeader(sections.some((section) => {
+        const bounds = section.getBoundingClientRect();
+        return bounds.top <= midpoint && bounds.bottom > midpoint;
+      }));
+      update();
+      // Observe the content behind the navigation; change ink, never its background.
+      observer = new IntersectionObserver(update, { rootMargin: `-${midpoint}px 0px -${window.innerHeight - midpoint - 1}px 0px` });
+      sections.forEach((section) => observer?.observe(section));
     };
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    configure();
+    window.addEventListener('resize', configure);
     return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
+      observer?.disconnect();
+      window.removeEventListener('resize', configure);
     };
   }, [pathname]);
   useEffect(() => {
@@ -36,7 +45,7 @@ export function Layout() {
   }, [menuOpen]);
   return <>
     <a className="skip-link" href="#main-content">Skip to content</a>
-    <header className={`site-header ${pathname === '/' ? 'over-hero' : 'inner-header'} ${scrolled || menuOpen ? 'is-solid' : ''}`}><div className="header-inner">
+    <header ref={headerRef} className={`site-header ${pathname === '/' ? 'over-hero' : 'inner-header'} ${lightHeader ? 'light-header' : ''}`}><div className="header-inner">
       <Link className="brand" to="/" aria-label={`${hotel.name} home`}><strong>{hotel.name}</strong></Link>
       <nav className="desktop-nav" aria-label="Main navigation"><NavLink to="/" end>The hotel</NavLink><NavLink to="/rooms">Rooms & suites</NavLink><NavLink to="/gallery">Gallery</NavLink></nav>
       <div className="header-actions"><Link className="signin-link" to="/account">{user ? 'My account' : 'Sign in'}</Link><Link className="button primary header-book" to="/rooms">Find your stay <ArrowUpRight size={17} /></Link><button className="icon-button menu-toggle" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button></div>

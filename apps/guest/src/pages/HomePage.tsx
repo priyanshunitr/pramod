@@ -40,7 +40,7 @@ export function HomePage() {
         </Reveal>
       </div>
     </section>
-    <section className="room-collection" id="rooms" aria-labelledby="collection-title">
+    <section className="room-collection" id="rooms" data-header-tone="light" aria-labelledby="collection-title">
       <div className="container">
         <div className="section-kicker"><h2 id="collection-title">/ The room collection</h2><span>Make yourself at home.</span></div>
         <CatalogFeedback />
@@ -56,7 +56,7 @@ export function HomePage() {
         <div className="collection-bottom"><p>A little everyday luxury, at your own pace.</p><Link to="/rooms" className="text-link">See rooms & availability <ArrowUpRight size={18} /></Link></div>
       </div>
     </section>
-    <section className="life-at-pramod" aria-labelledby="life-title">
+    <section className="life-at-pramod" data-header-tone="light" aria-labelledby="life-title">
       <img className="life-photo" src={hotel.heroImage} alt="Illustrative palm-lined pool in warm afternoon light" loading="lazy" width="2000" height="1333" />
       <div className="life-shade" />
       <div className="life-content container">

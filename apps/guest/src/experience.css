@@ -16,35 +16,41 @@ em { font-style: normal; }
 .button:hover svg, .round-link:hover svg, .next-stay-link:hover svg { transform: translate(3px, -3px); }
 :focus-visible { outline: 2px solid #267d91; }
 
-/* Floating navigation stays transparent over the hero, then gains a reading surface. */
-.site-header { position: sticky; top: 0; z-index: 30; background: #f7f8f2; transition: color .3s, background .3s, box-shadow .3s; }
-.site-header.over-hero { position: fixed; inset: 0 0 auto; color: #fff; background: transparent; }
-.site-header.is-solid { background: #f7f8f2f5; color: var(--ink); backdrop-filter: blur(14px); box-shadow: 0 1px 0 #19251c10; }
+/* The full-width bar stays transparent on every page and at every scroll position. */
+.site-header { position: sticky; top: 0; z-index: 30; background: transparent; color: var(--ink); }
+.site-header.over-hero { position: fixed; inset: 0 0 auto; }
+.site-header.light-header { color: #fff; }
+.light-header .brand, .light-header .signin-link, .light-header .menu-toggle { text-shadow: 0 1px 10px #09221e90; }
 .header-inner { width: calc(100% - 80px); max-width: none; height: 91px; gap: 28px; }
 .brand strong { font-family: 'DM Sans', Arial, sans-serif; font-size: 29px; font-weight: 650; letter-spacing: -1.5px; }
-.desktop-nav { position: absolute; left: 50%; transform: translateX(-50%); gap: 3px; padding: 5px; border-radius: 99px; background: #ffffff24; border: 1px solid #ffffff32; }
+.desktop-nav { position: absolute; left: 50%; transform: translateX(-50%); gap: 3px; padding: 5px; border-radius: 99px; color: #17382f; background: #ffffffc9; border: 1px solid #ffffff32; backdrop-filter: blur(10px); }
 .desktop-nav a { color: inherit; padding: 10px 18px; border: 0; border-radius: 99px; font-size: 11px; white-space: nowrap; transition: background .25s; }
 .desktop-nav a.active { background: #fff; color: #202620; }
-.desktop-nav a:hover:not(.active) { background: #ffffff25; }
-.over-hero:not(.is-solid) .desktop-nav, .over-hero:not(.is-solid) .signin-link, .over-hero:not(.is-solid) .menu-toggle { color: #17382f; }
-.is-solid .desktop-nav, .inner-header .desktop-nav { background: #e9ece4; border-color: transparent; }
-.is-solid .desktop-nav a:hover:not(.active), .inner-header .desktop-nav a:hover:not(.active) { background: #dde3d9; }
+.desktop-nav a:hover:not(.active) { background: #e9ece4; }
 .header-actions { gap: 23px; }
-.header-book.button { min-height: 42px; background: #fff; color: #1b2621; padding: 11px 17px; font-size: 11px; white-space: nowrap; }
-.is-solid .header-book.button, .inner-header .header-book.button { background: #191c19; color: #fff; }
+.header-book.button { min-height: 42px; background: #191c19; color: #fff; padding: 11px 17px; font-size: 11px; white-space: nowrap; }
+.light-header .header-book.button { background: #fff; color: #1b2621; }
 .signin-link { font-size: 12px; padding: 12px 0; }
-.mobile-nav { color: #1b211c; padding: 8px 25px 24px; background: #f7f8f2; border-color: #dbe0d5; }
+.mobile-nav { color: #1b211c; margin: 0 18px; padding: 8px 25px 24px; border-radius: 16px; background: #f7f8f2ed; border-color: #dbe0d5; backdrop-filter: blur(12px); }
 .mobile-nav a { min-height: 44px; }
 
 /* Real alpha foreground lets the roof and palms sit in front of the title. */
-.architecture-hero { position: relative; height: min(900px, 100svh); min-height: 640px; overflow: hidden; isolation: isolate; background: #79bbce; color: #fff; }
-.hero-wordmark-depth { position: absolute; inset: 8% 0 auto; transform: translateY(var(--hero-depth, 0px)); }
-.hero-wordmark { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; text-align: center; text-transform: uppercase; font-size: clamp(140px, 31vw, 540px); font-weight: 600; line-height: .9; letter-spacing: -.025em; animation: wordmark-arrive 1.5s var(--ease-out) both; }
-.hero-side-note { position: absolute; right: 3.2%; top: 19%; color: #17382f; font-size: 10px; line-height: 1.8; text-align: right; animation: fade-arrive 1s .5s both; }
-.architecture-scene { position: absolute; inset: 0; animation: architecture-arrive 1.6s var(--ease-out) both; pointer-events: none; }
+.architecture-hero { --scene-arrival-duration: 1.6s; --hero-height: clamp(640px, 100svh, 900px); --wordmark-top: calc(var(--hero-height) * .08); position: relative; height: var(--hero-height); overflow: clip; isolation: isolate; background: #79bbce; color: #fff; }
+/* Native sticky positioning keeps the text still without per-frame JS transforms.
+   Clip (rather than hidden) preserves the page as its scrolling ancestor. */
+.hero-wordmark-anchor { position: sticky; top: var(--wordmark-top); width: 100%; z-index: 0; overflow: clip; }
+.hero-wordmark { font-family: 'Chakra Petch', 'Arial Narrow', sans-serif; text-align: center; text-transform: uppercase; font-size: clamp(140px, 31vw, 540px); font-weight: 600; line-height: .9; letter-spacing: -.025em; }
+.hero-lettering { position: relative; left: 50%; display: block; width: max-content; white-space: nowrap; transform: translateX(-50%) scaleX(.76); }
+.architecture-hero[data-scene-ready='false'] .hero-wordmark, .architecture-hero[data-scene-ready='false'] .architecture-scene { opacity: 0; }
+/* Wait for the building to settle before lifting the lettering into place.
+   Backwards fill hides it during the delay and releases its transform afterwards. */
+.architecture-hero[data-scene-ready='true'] .hero-wordmark { animation: wordmark-arrive .85s var(--scene-arrival-duration) var(--ease-out) backwards; }
+.hero-side-note { position: absolute; z-index: 2; right: 3.2%; top: 19%; color: #17382f; font-size: 10px; line-height: 1.8; text-align: right; animation: fade-arrive 1s .5s both; }
+.architecture-scene { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+.architecture-hero[data-scene-ready='true'] .architecture-scene { animation: architecture-arrive var(--scene-arrival-duration) var(--ease-out) backwards; }
 .architecture-cutout { position: absolute; bottom: 0; left: 50%; width: max(100%, 142svh); max-width: none; height: auto; transform: translateX(-50%); clip-path: polygon(0 0, 15% 0, 15% 41.7%, 84% 41.7%, 84% 0, 100% 0, 100% 100%, 0 100%); }
-.architecture-shade { position: absolute; inset: 55% 0 0; background: linear-gradient(transparent 15%, #09221e9c); pointer-events: none; }
-.hero-bottom { position: absolute; bottom: 36px; left: 40px; right: 40px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; animation: fade-arrive 1.2s .5s both; }
+.architecture-shade { position: absolute; z-index: 2; inset: 55% 0 0; background: linear-gradient(transparent 15%, #09221e9c); pointer-events: none; }
+.hero-bottom { position: absolute; z-index: 3; bottom: 36px; left: 40px; right: 40px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; animation: fade-arrive 1.2s .5s both; }
 .hero-scroll { display: flex; align-items: center; gap: 16px; font-size: 11px; line-height: 1.6; }
 .hero-scroll > span:first-child { width: 48px; height: 48px; border: 1px solid #ffffff80; border-radius: 50%; display: grid; place-items: center; transition: background .3s; }
 .hero-scroll:hover > span:first-child { background: #ffffff30; }
@@ -157,11 +163,11 @@ em { font-style: normal; }
 .reveal[data-reveal='waiting'] { opacity: 0; transform: translateY(35px); }
 .reveal:focus-within { opacity: 1; transform: none; transition-delay: 0ms; }
 .room-fan[data-reveal='waiting'] .fan-card { transform: translateY(45px) rotate(0); }
-@keyframes wordmark-arrive { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes architecture-arrive { from { opacity: 0; transform: translateY(60px) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes wordmark-arrive { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 @keyframes fade-arrive { from { opacity: 0; } to { opacity: 1; } }
 
-@media (min-aspect-ratio: 19/10) { .architecture-hero { min-height: 600px; } .architecture-cutout { bottom: -13%; } .hero-wordmark-depth { top: 7%; } }
+@media (min-aspect-ratio: 19/10) { .architecture-hero { --hero-height: clamp(600px, 100svh, 900px); --wordmark-top: calc(var(--hero-height) * .07); } .architecture-cutout { bottom: -13%; } }
 @media (max-width: 1100px) {
   .container { width: calc(100% - 64px); }
   .header-inner { width: calc(100% - 48px); gap: 18px; }
@@ -176,8 +182,7 @@ em { font-style: normal; }
 }
 @media (max-width: 800px) {
   .header-inner { height: 80px; }
-  .architecture-hero { min-height: 610px; max-height: 850px; }
-  .hero-wordmark-depth { top: 25%; }
+  .architecture-hero { --hero-height: clamp(610px, 100svh, 850px); --wordmark-top: calc(var(--hero-height) * .25); }
   .hero-wordmark { font-size: 31vw; }
   .hero-side-note { top: 15%; right: 25px; }
   .hero-bottom { left: 25px; right: 25px; bottom: 30px; }
@@ -208,8 +213,7 @@ em { font-style: normal; }
   .header-actions { gap: 9px; }
   .header-book.button { padding: 10px 13px; font-size: 10px; gap: 10px; min-height: 40px; }
   .menu-toggle { width: 40px; height: 44px; }
-  .architecture-hero { height: 88svh; min-height: 570px; max-height: 780px; }
-  .hero-wordmark-depth { top: 35%; }
+  .architecture-hero { --hero-height: clamp(570px, 88svh, 780px); --wordmark-top: calc(var(--hero-height) * .35); }
   .hero-wordmark { font-size: 31vw; }
   .architecture-cutout { width: auto; height: 83%; }
   .hero-side-note { top: 17%; font-size: 9px; right: 22px; }
@@ -279,8 +283,10 @@ em { font-style: normal; }
   .room-card h3 { font-size: 29px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .reveal[data-reveal], .hero-wordmark-depth { opacity: 1; transform: none; }
+  .reveal[data-reveal] { opacity: 1; transform: none; }
+  .hero-wordmark-anchor { position: absolute; }
   .room-fan[data-reveal] .fan-card { transform: rotate(var(--tilt)); }
-  .hero-wordmark, .architecture-scene, .hero-bottom, .hero-side-note { animation: none; }
+  .architecture-hero[data-scene-ready] .hero-wordmark, .architecture-hero[data-scene-ready] .architecture-scene { animation: none; opacity: 1; transform: none; }
+  .hero-bottom, .hero-side-note { animation: none; }
   .collection-row:hover .collection-name h3, .collection-row:focus-visible .collection-name h3 { transform: none; }
 }
