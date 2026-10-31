@@ -1,6 +1,17 @@
 Illustrative stock photographs for the Pramod frontend preview.
 These are not photographs of the user's hotel.
+The architectural hero is also an illustrative concept, not the actual hotel.
 License: https://unsplash.com/license
+
+pramod-architecture-v2.webp: Original AI-generated architectural concept, 2026-11-01.
+Created using the built-in OpenAI image generator for this project; 1672 x 941 RGBA.
+Prompt direction: frontal modern tropical boutique villa, ivory cantilever slabs,
+warm timber soffits, glass balcony, palms at both sides and a turquoise pool;
+transparent sky for live typography behind the roof; no text, logos or UI.
+Compressed from the generated PNG to WebP (quality 88, alpha preserved).
+Visual composition reference supplied by the user:
+https://in.pinterest.com/pin/959477895677936736/
+The Pinterest video and its Zillow branding are not distributed with the site.
 
 hotel-pool.jpg: Cory Bjork / Unsplash
 https://unsplash.com/photos/swimming-pool-near-palm-trees-during-daytime-D1yT791Nf9A
