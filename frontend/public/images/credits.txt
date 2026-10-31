@@ -1,0 +1,19 @@
+Illustrative stock photographs for the Pramod frontend preview.
+These are not photographs of the user's hotel.
+License: https://unsplash.com/license
+
+hotel-pool.jpg: Cory Bjork / Unsplash
+https://unsplash.com/photos/swimming-pool-near-palm-trees-during-daytime-D1yT791Nf9A
+https://images.unsplash.com/photo-1623718649591-311775a30c43
+
+classic-room.jpg: Natalia Gusakova / Unsplash
+https://unsplash.com/photos/a-bedroom-with-a-large-bed-and-a-large-window-EYoK3eVKIiQ
+https://images.unsplash.com/photo-1675409145919-277c0fc2aa7d
+
+deluxe-room.jpg: visualsofdana / Unsplash
+https://unsplash.com/photos/T5pL6ciEn-I
+https://images.unsplash.com/photo-1611892440504-42a792e24d32
+
+family-suite.jpg: Vojtech Bruzek / Unsplash
+https://unsplash.com/photos/Yrxr3bsPdS0
+https://images.unsplash.com/photo-1618773928121-c32242e63f39
