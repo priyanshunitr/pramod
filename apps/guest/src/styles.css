@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=DM+Sans:wght@400;450;500;550;600;650;700&display=swap');
 
 :root { font-family: 'DM Sans', sans-serif; color: #273b33; background: #fbfaf6; font-synthesis: none; -webkit-font-smoothing: antialiased; --green: #2c443b; --ink: #283c34; --muted: #74786d; --line: #e2e3d9; --serif: 'Cormorant Garamond', Georgia, serif; }
 * { box-sizing: border-box; }

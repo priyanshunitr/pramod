@@ -77,3 +77,11 @@ No unresolved P0, P1, or P2 product findings remain in the inspected scope. Mobi
 - Database integration tests were not rerun because the API, schema, and reservation logic were unchanged.
 
 Result: passed
+
+## Follow-up: stronger parallax and condensed hero type
+
+The user requested faster image-over-text scrolling and taller, narrower lettering. The hero now uses uppercase [Barlow Condensed](https://fonts.google.com/specimen/Barlow+Condensed), weight 600, with responsive sizing and placement. The surrounding interface continues to use DM Sans. The parallax multiplier increased from 0.14 to 0.9: the lettering stays nearly stationary in the viewport while the villa moves upward across it. Reduced-motion handling is preserved.
+
+Verified the font loaded and checked the live layout at a normal 672 × 790 CSS-pixel viewport, desktop 1164 × 655, and phone 355 × 767 (the browser's existing zoom changes the requested viewport dimensions). No horizontal overflow. At 71.82 px scroll, the text layer had moved 64.64 px within the hero, confirming the new 0.9 multiplier. The header remained transparent over the image, also verifying the preceding header fix. A page reload was necessary to replace an older hot-reloaded effect closure before measuring.
+
+Updated visual evidence: [condensed hero](docs/design/guest-hero-condensed.png) and [short-scroll parallax](docs/design/guest-parallax-scroll.png). The earlier desktop/mobile captures above document the original design pass. The guest production build, including TypeScript checking, and `git diff --check` passed for this follow-up.

@@ -14,7 +14,8 @@ export function ArchitecturalHero() {
       frame = 0;
       const bounds = element.getBoundingClientRect();
       const distance = motion.matches ? 0 : Math.min(Math.max(-bounds.top, 0), bounds.height);
-      element.style.setProperty('--hero-depth', `${distance * 0.14}px`);
+      // Keep the lettering nearly in place as the villa scrolls up over it.
+      element.style.setProperty('--hero-depth', `${distance * 0.9}px`);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
     const configure = () => {

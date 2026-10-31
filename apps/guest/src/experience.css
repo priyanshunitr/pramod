@@ -38,8 +38,8 @@ em { font-style: normal; }
 
 /* Real alpha foreground lets the roof and palms sit in front of the title. */
 .architecture-hero { position: relative; height: min(900px, 100svh); min-height: 640px; overflow: hidden; isolation: isolate; background: #79bbce; color: #fff; }
-.hero-wordmark-depth { position: absolute; inset: 12% 0 auto; transform: translateY(var(--hero-depth, 0px)); }
-.hero-wordmark { text-align: center; font-size: clamp(100px, 22.6vw, 390px); font-weight: 600; line-height: .95; letter-spacing: -.075em; padding-right: .06em; animation: wordmark-arrive 1.5s var(--ease-out) both; }
+.hero-wordmark-depth { position: absolute; inset: 8% 0 auto; transform: translateY(var(--hero-depth, 0px)); }
+.hero-wordmark { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; text-align: center; text-transform: uppercase; font-size: clamp(140px, 31vw, 540px); font-weight: 600; line-height: .9; letter-spacing: -.025em; animation: wordmark-arrive 1.5s var(--ease-out) both; }
 .hero-side-note { position: absolute; right: 3.2%; top: 19%; color: #17382f; font-size: 10px; line-height: 1.8; text-align: right; animation: fade-arrive 1s .5s both; }
 .architecture-scene { position: absolute; inset: 0; animation: architecture-arrive 1.6s var(--ease-out) both; pointer-events: none; }
 .architecture-cutout { position: absolute; bottom: 0; left: 50%; width: max(100%, 142svh); max-width: none; height: auto; transform: translateX(-50%); clip-path: polygon(0 0, 15% 0, 15% 41.7%, 84% 41.7%, 84% 0, 100% 0, 100% 100%, 0 100%); }
@@ -161,7 +161,7 @@ em { font-style: normal; }
 @keyframes architecture-arrive { from { opacity: 0; transform: translateY(60px) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes fade-arrive { from { opacity: 0; } to { opacity: 1; } }
 
-@media (min-aspect-ratio: 19/10) { .architecture-hero { min-height: 600px; } .architecture-cutout { bottom: -13%; } .hero-wordmark-depth { top: 11%; } }
+@media (min-aspect-ratio: 19/10) { .architecture-hero { min-height: 600px; } .architecture-cutout { bottom: -13%; } .hero-wordmark-depth { top: 7%; } }
 @media (max-width: 1100px) {
   .container { width: calc(100% - 64px); }
   .header-inner { width: calc(100% - 48px); gap: 18px; }
@@ -177,8 +177,8 @@ em { font-style: normal; }
 @media (max-width: 800px) {
   .header-inner { height: 80px; }
   .architecture-hero { min-height: 610px; max-height: 850px; }
-  .hero-wordmark-depth { top: 30%; }
-  .hero-wordmark { font-size: 23vw; }
+  .hero-wordmark-depth { top: 25%; }
+  .hero-wordmark { font-size: 31vw; }
   .hero-side-note { top: 15%; right: 25px; }
   .hero-bottom { left: 25px; right: 25px; bottom: 30px; }
   .architecture-cutout { width: max(130%, 132svh); }
@@ -209,8 +209,8 @@ em { font-style: normal; }
   .header-book.button { padding: 10px 13px; font-size: 10px; gap: 10px; min-height: 40px; }
   .menu-toggle { width: 40px; height: 44px; }
   .architecture-hero { height: 88svh; min-height: 570px; max-height: 780px; }
-  .hero-wordmark-depth { top: 40%; }
-  .hero-wordmark { font-size: 23vw; letter-spacing: -.075em; }
+  .hero-wordmark-depth { top: 35%; }
+  .hero-wordmark { font-size: 31vw; }
   .architecture-cutout { width: auto; height: 83%; }
   .hero-side-note { top: 17%; font-size: 9px; right: 22px; }
   .hero-bottom { left: 22px; right: 22px; bottom: 25px; align-items: flex-end; }
