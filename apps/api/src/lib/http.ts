@@ -16,12 +16,18 @@ export const uuid = z.uuid('Invalid identifier.');
 export const propertyParam = (request: Request) => parse(uuid, request.params.propertyId);
 export const email = z.email('Enter a valid email address.').max(254).transform(value => value.toLowerCase());
 
-export const allowedOrigins = new Set([new URL(env.FRONTEND_ORIGIN).origin]);
+const configuredOrigins = [env.FRONTEND_ORIGIN,
+  env.RECEPTION_ORIGIN ?? (env.NODE_ENV !== 'production' ? 'http://localhost:5174' : undefined),
+  env.OWNER_ORIGIN ?? (env.NODE_ENV !== 'production' ? 'http://localhost:5175' : undefined),
+].filter((origin): origin is string => Boolean(origin));
+export const allowedOrigins = new Set(configuredOrigins.map(origin => new URL(origin).origin));
 if (env.NODE_ENV !== 'production') {
-  const local = new URL(env.FRONTEND_ORIGIN);
-  if (['localhost', '127.0.0.1'].includes(local.hostname)) {
-    local.hostname = local.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
-    allowedOrigins.add(local.origin);
+  for (const origin of configuredOrigins) {
+    const local = new URL(origin);
+    if (['localhost', '127.0.0.1'].includes(local.hostname)) {
+      local.hostname = local.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
+      allowedOrigins.add(local.origin);
+    }
   }
 }
 

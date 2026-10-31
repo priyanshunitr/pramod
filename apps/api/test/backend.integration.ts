@@ -198,6 +198,69 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 403);
   });
 
+  await t.test('owner reports enforce access and reconcile room inventory, dates, and booking values', async () => {
+    const reportHotel = (await pool.query<{ id: string }>("INSERT INTO properties(slug, name) VALUES ('report-hotel', 'Report Hotel') RETURNING id")).rows[0]!.id;
+    await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [reportHotel, owner.id, receptionist.id]);
+    const types = (await pool.query<{ id: string }>("INSERT INTO room_types(property_id, name, max_guests, nightly_rate_minor) VALUES ($1, 'Classic', 2, 100000), ($1, 'Suite', 2, 200000) RETURNING id", [reportHotel])).rows;
+    const typeA = types[0]!.id; const typeB = types[1]!.id;
+    const rooms = (await pool.query<{ id: string }>(`INSERT INTO rooms(property_id, room_type_id, number, operational_status, housekeeping_status)
+      VALUES ($1, $2, 'A', 'active', 'clean'), ($1, $3, 'B', 'active', 'dirty'), ($1, $3, 'C', 'out_of_service', 'clean') RETURNING id`, [reportHotel, typeA, typeB])).rows;
+    async function fixture(roomIndex: number, type: string, start: number, end: number, status: string, rate: number, active: boolean, currency = 'INR') {
+      const id = randomUUID();
+      await pool.query(`INSERT INTO bookings(id, property_id, customer_id, room_type_id, check_in, check_out, guests, status, nightly_rate_minor, total_minor, currency, idempotency_key, request_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, $9, $10, $11, 'report-test')`, [id, reportHotel, customer.id, type, future(start), future(end), status, rate, rate * (end - start), currency, randomUUID()]);
+      await pool.query('INSERT INTO booking_rooms(booking_id, property_id, room_id, check_in, check_out, active) VALUES ($1, $2, $3, $4, $5, $6)', [id, reportHotel, rooms[roomIndex]!.id, future(start), future(end), active]);
+    }
+    await fixture(0, typeA, 0, 3, 'checked_in', 100000, true);
+    await fixture(1, typeB, 2, 5, 'confirmed', 200000, true);
+    await fixture(1, typeB, 1, 2, 'cancelled', 900000, false);
+    await fixture(1, typeB, -1, 0, 'checked_out', 200000, false);
+    const path = `/properties/${reportHotel}/owner/dashboard`;
+    const query = `?from=${future(1)}&to=${future(4)}`;
+    assert.equal((await call(path)).status, 401);
+    for (const user of [customer, receptionist, outsider]) assert.equal((await call(path, undefined, user.cookie)).status, 403);
+    for (const badQuery of ['?from=2027-02-30', `?from=${future(-1)}`, `?from=${today}&to=${today}`, `?to=${future(31)}`, '?unexpected=true', '?from=x&from=y']) {
+      assert.equal((await call(path + badQuery, undefined, owner.cookie)).status, 400);
+    }
+    assert.equal((await call(`${path}?roomTypeId=${roomType}`, undefined, owner.cookie)).status, 404);
+    const report = await call(path + query, undefined, owner.cookie);
+    assert.equal(report.status, 200, JSON.stringify(report.payload));
+    assert.equal(report.headers.get('cache-control'), 'no-store');
+    const data = report.payload.data;
+    assert.equal(data.summary.totalRooms, 3);
+    assert.equal(data.summary.inServiceRooms, 2);
+    assert.equal(data.summary.occupiedRooms, 1);
+    assert.equal(data.summary.occupancyPercent, 50);
+    assert.equal(data.summary.availableRooms, 0);
+    assert.equal(data.summary.outOfServiceRooms, 1);
+    assert.equal(data.summary.arrivalsToday, 1);
+    assert.equal(data.summary.departuresToday, 1);
+    assert.equal(data.summary.reservations, 3);
+    assert.equal(data.summary.cancelled, 1);
+    assert.deepEqual(data.summary.readiness, { clean: 1, dirty: 1, cleaning: 0 });
+    assert.deepEqual(data.summary.bookingValueByCurrency, [{ currency: 'INR', amountMinor: 600000 }]);
+    assert.deepEqual(data.daily.map((day: any) => [day.reservedRooms, day.availableRooms]), [[1, 1], [2, 0], [1, 1]]);
+    assert.deepEqual(data.rooms.map((room: any) => room.status), ['reserved', 'reserved', 'out_of_service']);
+    const filtered = await call(`${path}${query}&roomTypeId=${typeA}`, undefined, owner.cookie);
+    assert.equal(filtered.payload.data.summary.totalRooms, 1);
+    assert.deepEqual(filtered.payload.data.summary.bookingValueByCurrency, [{ currency: 'INR', amountMinor: 200000 }]);
+    const adjacent = await call(`${path}?from=${future(3)}&to=${future(4)}&roomTypeId=${typeA}`, undefined, owner.cookie);
+    assert.equal(adjacent.payload.data.summary.availableRooms, 1, 'checkout day is available');
+    assert.equal(adjacent.payload.data.summary.occupiedRooms, 1, 'current occupancy is separate from future availability');
+    await fixture(0, typeA, 3, 4, 'confirmed', 1000, true, 'USD');
+    const currencies = await call(path + query, undefined, owner.cookie);
+    assert.deepEqual(currencies.payload.data.summary.bookingValueByCurrency, [{ currency: 'INR', amountMinor: 600000 }, { currency: 'USD', amountMinor: 1000 }]);
+    const empty = await call(`/properties/${otherHotel}/owner/dashboard`, undefined, outsider.cookie);
+    assert.equal(empty.payload.data.summary.totalRooms, 0);
+    assert.equal(empty.payload.data.summary.occupancyPercent, null);
+    assert.ok(empty.payload.data.daily.every((day: any) => day.availableRooms === 0));
+    for (const trustedOrigin of ['http://127.0.0.1:5174', 'http://127.0.0.1:5175']) {
+      assert.equal((await call(`/properties/${reportHotel}/staff/rooms/${rooms[0]!.id}/housekeeping`, { status: 'clean' }, owner.cookie, { origin: trustedOrigin })).status, 200);
+    }
+    await pool.query('UPDATE staff_memberships SET active = false WHERE property_id = $1 AND user_id = $2', [reportHotel, owner.id]);
+    assert.equal((await call(path, undefined, owner.cookie)).status, 403, 'revoked owner sessions cannot read reports');
+  });
+
   await t.test('expired sessions and signed-out sessions cannot be reused; rate limits are shared', async () => {
     const login = await call('/auth/login', { email: customer.email, password });
     assert.equal(login.status, 200);

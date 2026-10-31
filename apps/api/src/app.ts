@@ -7,6 +7,7 @@ import { allowedOrigins, HttpError, protectWrites } from './lib/http.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { staffRouter } from './modules/staff/staff.routes.js';
 import { customerBookingRouter, propertyBookingRouter } from './modules/bookings/bookings.routes.js';
+import { ownerRouter } from './modules/owner/owner.routes.js';
 
 interface Dependencies {
   checkDatabase: () => Promise<void>;
@@ -26,6 +27,7 @@ export function createApp(dependencies: Dependencies = {
   app.use('/api', protectWrites);
   app.use('/api/auth', authRouter);
   app.use('/api/properties/:propertyId/staff', staffRouter);
+  app.use('/api/properties/:propertyId/owner', ownerRouter);
   app.use('/api/properties/:propertyId', propertyBookingRouter);
   app.use('/api/bookings', customerBookingRouter);
 
