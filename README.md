@@ -66,6 +66,8 @@ Saved stay plans remain browser-local and do not hold inventory. Confirmed reser
 
 The layout includes responsive navigation, keyboard focus indicators, loading/error/empty states, and a gallery dialog with Escape/arrow-key support. The current photos and amenities are illustrative; replace them with the hotel's confirmed content before launch. Image sources and licensing are recorded in `apps/guest/public/images/credits.txt`.
 
+The guest homepage follows the architectural direction in the supplied Pinterest reference: a live wordmark behind an original transparent hero image, a floating navigation pill, layered room cards, and a dark room collection with image previews on hover or keyboard focus. `apps/guest/src/experience.css` holds the visual treatment; the existing booking layouts remain in `styles.css`. `ArchitecturalHero` adds bounded scroll depth, and `Reveal` animates sections once when they enter the viewport. Both honor `prefers-reduced-motion`, including changes while the page is open. Navigation between routes resets the scroll position immediately. See [design QA](design-qa.md) for screenshots, responsive checks, and the reference comparison.
+
 ## Project structure
 
 ```text
