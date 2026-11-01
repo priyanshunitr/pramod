@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { api } from '@hotel/api-client';
+import { useStaffRequest } from './WorkspaceContext';
 
 interface Room { id: string; number: string; housekeepingStatus: string; operationalStatus: string; }
 export function HousekeepingPanel({ propertyId }: { propertyId: string }) {
+  const api = useStaffRequest();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [version, setVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +14,7 @@ export function HousekeepingPanel({ propertyId }: { propertyId: string }) {
     api<Room[]>(base, undefined, controller.signal).then(data => { if (!controller.signal.aborted) { setRooms(data); setError(null); } })
       .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load rooms.'); });
     return () => controller.abort();
-  }, [base, version]);
+  }, [base, version, api]);
   async function update(id: string, status: string) {
     setBusy(true); setError(null);
     try { await api(`${base}/${id}/housekeeping`, { status }); setVersion(value => value + 1); }

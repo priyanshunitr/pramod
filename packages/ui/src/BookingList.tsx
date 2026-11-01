@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { api, type Booking } from '@hotel/api-client';
+import { type Booking } from '@hotel/api-client';
+import { useStaffRequest } from './WorkspaceContext';
 import { formatMoney, prettyDate } from './format';
 
 const statusLabels = { confirmed: 'Confirmed', checked_in: 'Checked in', checked_out: 'Checked out', cancelled: 'Cancelled' };
 export function BookingList({ propertyId, items, onChange }: { propertyId?: string; items?: Booking[]; onChange?: () => void }) {
+  const api = useStaffRequest();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export function BookingList({ propertyId, items, onChange }: { propertyId?: stri
       .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load reservations.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [base, version, items]);
+  }, [base, version, items, api]);
   async function update(id: string, action: string) {
     setBusy(id); setError(null);
     try { await api(`${base}/${id}/${action}`, {}); setConfirmCancel(null); setVersion(value => value + 1); onChange?.(); }

@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ArrowDownLeft, ArrowUpRight, BedDouble, CalendarDays, ChevronRight, CircleCheck, Clock3, DoorOpen, RefreshCw, Search, Sparkles, Wallet } from 'lucide-react';
-import { api, ApiError, useAuth, type OwnerDashboard, type OwnerRoom, type PropertyCatalog } from '@hotel/api-client';
-import { addDays, BookingList, formatMoney, prettyDate, todayAtHotel } from '@hotel/ui';
+import { ApiError, type OwnerDashboard, type OwnerRoom, type PropertyCatalog } from '@hotel/api-client';
+import { addDays, BookingList, formatMoney, prettyDate, todayAtHotel, useWorkspace } from '@hotel/ui';
 import { selectBookings } from './filters';
 
 type View = 'overview' | 'availability' | 'reservations';
 const labels = { available: 'Available', reserved: 'Reserved', out_of_service: 'Out of service', clean: 'Clean', dirty: 'Needs cleaning', cleaning: 'Cleaning' };
 
 export function ReportPage({ property, view }: { property: PropertyCatalog; view: View }) {
-  const auth = useAuth(); const [params, setParams] = useSearchParams();
+  const { request, refreshAccess } = useWorkspace(); const [params, setParams] = useSearchParams();
   const today = todayAtHotel(property.timezone);
   const from = params.get('from') || today; const to = params.get('to') || addDays(today, 7); const roomTypeId = params.get('roomTypeId') || '';
   const [report, setReport] = useState<OwnerDashboard | null>(null);
@@ -20,12 +20,12 @@ export function ReportPage({ property, view }: { property: PropertyCatalog; view
   const refresh = () => setVersion(value => value + 1);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError(null); setReport(null);
-    api<OwnerDashboard>(`/properties/${property.id}/owner/dashboard?${query}`, undefined, controller.signal)
+    request<OwnerDashboard>(`/properties/${property.id}/owner/dashboard?${query}`, undefined, controller.signal)
       .then(data => { if (!controller.signal.aborted) setReport(data); })
-      .catch(error => { if (!controller.signal.aborted) { setError(error instanceof Error ? error.message : 'Could not load the hotel report.'); if (error instanceof ApiError && [401, 403].includes(error.status)) void auth.refresh(); } })
+      .catch(error => { if (!controller.signal.aborted) { setError(error instanceof Error ? error.message : 'Could not load the hotel report.'); if (error instanceof ApiError && [401, 403].includes(error.status)) refreshAccess(); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [property.id, query, version, auth.refresh]);
+  }, [property.id, query, version, request, refreshAccess]);
   function setWindow(start: string, end: string, type = roomTypeId) {
     const next = new URLSearchParams(params); next.set('from', start); next.set('to', end); type ? next.set('roomTypeId', type) : next.delete('roomTypeId');
     next.delete('booking'); setParams(next); setFormError(null);

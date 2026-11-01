@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { api } from '@hotel/api-client';
+import { useStaffRequest } from './WorkspaceContext';
 
 interface Team { members: { id: string; fullName: string; email: string; role: string }[]; requests: { id: string; fullName: string; email: string; introduction: string }[]; }
 export function TeamPanel({ propertyId, onChange }: { propertyId: string; onChange: () => void }) {
+  const api = useStaffRequest();
   const [team, setTeam] = useState<Team | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ token: string; expiresAt: string } | null>(null);
@@ -15,7 +16,7 @@ export function TeamPanel({ propertyId, onChange }: { propertyId: string; onChan
     api<Team>(`${base}/team`, undefined, controller.signal).then(data => { if (!controller.signal.aborted) setTeam(data); })
       .catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load your team.'); });
     return () => controller.abort();
-  }, [base, version]);
+  }, [base, version, api]);
   async function act(path: string, body: unknown) {
     setBusy(true); setError(null);
     try { await api(`${base}${path}`, body); setVersion(value => value + 1); setRevoke(null); onChange(); }
