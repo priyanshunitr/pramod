@@ -23,10 +23,10 @@ export function HomePage() {
     const update = () => {
       frame = 0;
       const bounds = section.getBoundingClientRect();
-      // Start at 125% on entry and reach the full view as the section leaves.
+      // Pull back from 220% on entry to the full view while half the section is still visible.
       const progress = Math.max(0, Math.min(1,
-        (window.innerHeight - bounds.top) / (window.innerHeight + bounds.height)));
-      photo.style.setProperty('--life-photo-scale', String(reducedMotion.matches ? 1 : 1.25 - progress * .25));
+        (window.innerHeight - bounds.top) / (window.innerHeight + bounds.height * .5)));
+      photo.style.setProperty('--life-photo-scale', String(reducedMotion.matches ? 1 : 2.2 - progress * 1.2));
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
