@@ -13,6 +13,7 @@ export function InteriorSection() {
     const stage = section.querySelector<HTMLElement>('.introduction-stage')!;
     const tracks = [...section.querySelectorAll<HTMLElement>('.filmstrip-track')];
     const staticLayout = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let starts: number[] = [];
     let travel: number[] = [];
     let distance = 0;
     let frame = 0;
@@ -22,7 +23,7 @@ export function InteriorSection() {
       frame = 0;
       const progress = distance > 0 ? Math.min(1, Math.max(0, -section.getBoundingClientRect().top / distance)) : 0;
       tracks.forEach((track, index) => {
-        track.style.setProperty('--film-offset', `${-progress * (travel[index] ?? 0)}px`);
+        track.style.setProperty('--film-offset', `${-((starts[index] ?? 0) + progress * (travel[index] ?? 0))}px`);
       });
     };
     const schedule = () => {
@@ -31,11 +32,21 @@ export function InteriorSection() {
     const measure = () => {
       const pinned = !staticLayout.matches;
       section.dataset.scrollMode = pinned ? 'pinned' : 'static';
-      travel = tracks.map(track => pinned ? Math.max(0, track.scrollHeight - track.parentElement!.clientHeight) : 0);
-      // The last frame reaches the bottom edge exactly when the sticky stage releases.
+      const availableTravel = tracks.map(track => pinned
+        ? Math.max(0, track.getBoundingClientRect().height - track.parentElement!.getBoundingClientRect().height)
+        : 0);
+      starts = tracks.map((track, index) => {
+        const firstFrame = track.firstElementChild;
+        const frameStep = (firstFrame?.getBoundingClientRect().height ?? 0) + parseFloat(getComputedStyle(track).rowGap);
+        return Math.min(availableTravel[index] ?? 0, frameStep * Number(track.dataset.startFrame ?? 0));
+      });
+      travel = availableTravel.map((available, index) => available - (starts[index] ?? 0));
+      // Different track lengths produce different speeds, with both last frames
+      // reaching the bottom together before the sticky stage releases.
       distance = Math.max(0, ...travel);
       section.style.setProperty('--film-scroll-distance', `${distance}px`);
-      schedule();
+      cancelAnimationFrame(frame);
+      update();
     };
     const resize = new ResizeObserver(measure);
     resize.observe(stage);
