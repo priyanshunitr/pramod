@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { featuredRooms } from '../config/hotel';
 
-export function InteriorFilmstrip() {
+const interiorRolls = [featuredRooms, [featuredRooms[1], featuredRooms[2], featuredRooms[0]]] as const;
+
+function InteriorRoll({ rooms, number }: { rooms: readonly (typeof featuredRooms)[number][]; number: number }) {
   const viewport = useRef<HTMLDivElement>(null);
   const [canPrevious, setCanPrevious] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -12,8 +14,8 @@ export function InteriorFilmstrip() {
     const element = viewport.current;
     if (!element) return;
     const update = () => {
-      setCanPrevious(element.scrollLeft > 2);
-      setCanNext(element.scrollLeft + element.clientWidth < element.scrollWidth - 2);
+      setCanPrevious(element.scrollTop > 2);
+      setCanNext(element.scrollTop + element.clientHeight < element.scrollHeight - 2);
     };
     const resize = new ResizeObserver(update);
     resize.observe(element);
@@ -27,29 +29,39 @@ export function InteriorFilmstrip() {
     const element = viewport.current;
     if (!element) return;
     element.scrollBy({
-      left: direction * element.clientWidth * 0.8,
+      top: direction * element.clientHeight * 0.75,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
   }
 
-  return <div className="interior-filmstrip">
-    <div className="filmstrip-heading"><span>/ Inside Pramod</span><span>{String(featuredRooms.length).padStart(2, '0')} frames of comfort</span></div>
-    <div className="filmstrip-viewport" id="interior-filmstrip" ref={viewport} tabIndex={0} role="region" aria-label="Interior photographs, scroll horizontally">
+  const id = `interior-roll-${number}`;
+  return <div className="filmstrip-roll">
+    <div className="filmstrip-viewport" id={id} ref={viewport} tabIndex={0} role="region" aria-label={`Interior roll ${number}, scroll vertically`}>
       <ul className="filmstrip-track">
-        {featuredRooms.map((room, index) => <li className="filmstrip-frame" key={room.slug}>
+        {rooms.map((room, index) => <li className="filmstrip-frame" key={room.slug}>
           <figure>
             <img src={room.image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
-            <figcaption><span>{room.name}</span><span aria-hidden="true">{String(index + 1).padStart(2, '0')}A</span></figcaption>
+            <figcaption><span>{room.name}</span><span aria-hidden="true">{String(index + 1).padStart(2, '0')}{number === 1 ? 'A' : 'B'}</span></figcaption>
           </figure>
         </li>)}
       </ul>
     </div>
+    <div className="filmstrip-controls" aria-label={`Roll ${number} controls`}>
+      <button type="button" onClick={() => move(-1)} disabled={!canPrevious} aria-label={`Scroll roll ${number} up`} aria-controls={id}><ArrowUp size={18} /></button>
+      <button type="button" onClick={() => move(1)} disabled={!canNext} aria-label={`Scroll roll ${number} down`} aria-controls={id}><ArrowDown size={18} /></button>
+    </div>
+  </div>;
+}
+
+export function InteriorFilmstrip() {
+  return <div className="interior-filmstrip" id="interior-filmstrip">
+    <div className="filmstrip-heading"><span>/ Inside Pramod</span><span>Two rolls. A little escape.</span></div>
+    <div className="filmstrip-columns">
+      {interiorRolls.map((rooms, index) => <InteriorRoll key={index} rooms={rooms} number={index + 1} />)}
+    </div>
     <div className="filmstrip-footer">
       <Link className="text-link" to="/gallery">Explore the interiors <ArrowUpRight size={16} /></Link>
-      <div className="filmstrip-controls" aria-label="Filmstrip controls">
-        <button type="button" onClick={() => move(-1)} disabled={!canPrevious} aria-label="Previous interior photos" aria-controls="interior-filmstrip"><ArrowLeft size={18} /></button>
-        <button type="button" onClick={() => move(1)} disabled={!canNext} aria-label="Next interior photos" aria-controls="interior-filmstrip"><ArrowRight size={18} /></button>
-      </div>
+      <span>Little details. A feeling of home.</span>
     </div>
   </div>;
 }
