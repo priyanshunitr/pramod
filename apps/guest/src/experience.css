@@ -78,19 +78,19 @@ em { font-style: normal; }
 .introduction-copy > p { max-width: 335px; color: #687060; font-size: 13px; line-height: 1.85; margin: 29px 0 25px; }
 .round-link { display: inline-flex; align-items: center; gap: 30px; font-size: 12px; }
 .round-link > span { width: 42px; height: 42px; border: 1px solid #aab3a3; border-radius: 50%; display: grid; place-items: center; }
-.room-fan { position: relative; min-height: 680px; }
-.fan-card { position: absolute; width: 64%; padding: 10px; background: #fff; border-radius: 11px; box-shadow: 0 10px 45px #192a1720; transition: transform .7s var(--ease-out), box-shadow .4s; transform: rotate(var(--tilt)); }
+.room-fan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 34px; min-width: 0; padding: 12px; }
+.fan-card { position: relative; width: 100%; max-width: 250px; min-width: 0; justify-self: center; padding: 8px; background: #fff; border-radius: 11px; box-shadow: 0 10px 45px #192a1720; transition: transform .7s var(--ease-out), box-shadow .4s; transform: rotate(var(--tilt)); }
 .fan-card > img { width: 100%; height: auto; aspect-ratio: 1.43; border-radius: 6px; }
-.fan-card-0 { --tilt: -12deg; top: 5%; left: 2%; z-index: 1; }
-.fan-card-1 { --tilt: 10deg; top: 22%; right: 0; z-index: 2; }
-.fan-card-2 { --tilt: -5deg; top: 44%; left: 7%; z-index: 3; }
-.fan-card:hover, .fan-card:focus-visible { z-index: 5; transform: rotate(0deg) translateY(-10px); box-shadow: 0 20px 65px #192a1735; }
+.fan-card-0 { --tilt: -3deg; }
+.fan-card-1 { --tilt: 3deg; }
+.fan-card-2 { --tilt: -2deg; grid-column: 1 / -1; width: calc((100% - 34px) / 2); }
+.fan-card:hover, .fan-card:focus-visible { transform: rotate(0deg) translateY(-6px); box-shadow: 0 20px 65px #192a1735; }
 .fan-card-caption { padding: 16px 9px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .fan-card-caption strong { font-size: 17px; letter-spacing: -.4px; font-weight: 550; }
 .fan-card-caption small { display: block; margin-top: 5px; font-size: 9px; color: #7b8076; }
 .fan-card-price { padding: 0 9px 9px; font-size: 14px; }
 .fan-card-price > span { font-size: 10px; color: #7c8178; }
-.fan-note { position: absolute; bottom: -8px; right: 0; display: flex; align-items: center; gap: 15px; color: #767e6e; font-size: 10px; }
+.fan-note { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 15px; color: #767e6e; font-size: 10px; text-align: center; }
 
 /* Wide, quiet rows mirror the reference's dark collection chapter. */
 .room-collection { padding: 65px 0 45px; background: #111411; color: #f5f6ee; overflow: hidden; }
@@ -173,8 +173,6 @@ em { font-style: normal; }
   .header-inner { width: calc(100% - 48px); gap: 18px; }
   .desktop-nav a { padding-inline: 13px; }
   .header-actions { gap: 15px; }
-  .room-fan { min-height: 660px; }
-  .fan-card { width: 76%; }
   .fan-card-caption strong { font-size: 15px; }
   .fan-card-caption small { font-size: 8px; }
   .comfort-notes { grid-template-columns: 1fr 1fr; }
@@ -187,14 +185,10 @@ em { font-style: normal; }
   .hero-side-note { top: 15%; right: 25px; }
   .hero-bottom { left: 25px; right: 25px; bottom: 30px; }
   .architecture-cutout { width: max(130%, 132svh); }
-  .introduction-grid { gap: 25px; grid-template-columns: .85fr 1.15fr; }
+  .introduction-grid { gap: 38px; grid-template-columns: 1fr; }
   .introduction-copy h2 { font-size: 76px; }
-  .room-fan { min-height: 600px; }
-  .fan-card { width: 86%; }
-  .fan-card-0 { top: 9%; }
-  .fan-card-1 { top: 30%; }
-  .fan-card-2 { top: 44%; }
-  .fan-note { bottom: -32px; font-size: 9px; }
+  .room-fan { width: min(100%, 600px); margin-inline: auto; }
+  .fan-note { font-size: 9px; }
   .stay-introduction { padding-bottom: 100px; }
   .collection-row { gap: 15px; min-height: 145px; }
   .collection-name h3 { font-size: 7vw; }
@@ -236,16 +230,12 @@ em { font-style: normal; }
   .introduction-grid { grid-template-columns: 1fr; gap: 35px; margin-top: 39px; }
   .introduction-copy h2 { font-size: clamp(70px, 22.5vw, 88px); }
   .introduction-copy > p { max-width: 300px; font-size: 13px; }
-  .room-fan { width: min(100%, 400px); margin: auto; min-height: 550px; }
-  .fan-card { width: 72%; }
-  .fan-card-0 { left: 5%; top: 4%; --tilt: -8deg; }
-  .fan-card-1 { right: 2%; top: 27%; --tilt: 8deg; }
-  .fan-card-2 { left: 8%; top: 49%; }
+  .room-fan { grid-template-columns: minmax(0, 1fr); width: 100%; gap: 28px; }
+  .fan-card { width: 100%; max-width: 230px; }
   .fan-card-caption { padding: 13px 5px 9px; }
   .fan-card-caption strong { font-size: 15px; }
   .fan-card-caption small { font-size: 8px; }
   .fan-card-price { font-size: 13px; padding-inline: 5px; }
-  .fan-note { bottom: 0; right: 3%; }
   .room-collection { padding-block: 40px 28px; }
   .room-collection .section-kicker { margin-bottom: 28px; }
   .collection-row { padding-block: 27px; min-height: 127px; gap: 10px; }
