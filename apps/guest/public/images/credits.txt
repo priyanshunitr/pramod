@@ -20,6 +20,14 @@ The generated scene contains no reference branding or text and is not a photo of
 Full generation prompt: pramod-night-retreat-v1.prompt.txt.
 The Unsplash license above applies to the stock photos below, not this generated asset.
 
+pramod-night-retreat-v2.png: Regenerated original resort concept, 2026-11-02.
+Created using the built-in OpenAI image generator from v1 as the visual reference.
+Wider framing and regenerated detail for the full-screen lifestyle section.
+Native output: 1672 x 941, opaque PNG. A requested 3840 x 2160 size was not returned.
+Preserved at native resolution without artificial upscaling; not a photo of Pramod.
+Full generation prompt: pramod-night-retreat-v2.prompt.txt.
+The Unsplash license applies only to the stock photos below.
+
 hotel-pool.jpg: Cory Bjork / Unsplash
 https://unsplash.com/photos/swimming-pool-near-palm-trees-during-daytime-D1yT791Nf9A
 https://images.unsplash.com/photo-1623718649591-311775a30c43

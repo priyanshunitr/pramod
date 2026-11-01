@@ -1,0 +1,14 @@
+Generation mode: built-in OpenAI image_gen tool
+Created: 2026-11-02
+Output: pramod-night-retreat-v2.png
+Reference: pramod-night-retreat-v1.png
+Purpose: regenerated full-screen illustrative hotel background; not a photograph of Pramod.
+Requested resolution: 3840 x 2160. Actual native output: 1672 x 941.
+
+Use case: photorealistic-natural.
+Asset type: full-screen hotel website background photograph.
+Input image 1: the existing original generated nighttime resort scene, used as a composition and design reference.
+Primary request: regenerate this scene in very high quality at 3840 x 2160 pixels, 16:9 landscape, filling the entire canvas edge to edge. Render new fine detail, not a blurred enlargement. Retain the same resort atmosphere and recognizable composition: elegant stone and dark timber villa with an open warm lounge on the left, cream linen sofas, woven lamps, broad teak terrace, a long illuminated turquoise infinity pool extending through the foreground and middle, tropical palms and planting, distant calm ocean bay and island silhouettes on the right, midnight blue sky.
+Composition: full-screen immersive architectural hospitality photograph with a slightly wider pulled-back view so the villa, pool edge, and ocean have breathing room. Show generous foreground pool and sky above the palms. Safe composition for modest zoom/cropping and responsive full-viewport display. Natural perspective, coherent architecture and continuous pool geometry.
+Quality: crisp natural stone grain, timber texture, woven pendant detail, individual palm fronds, fine water ripples and plausible reflections, clean realistic furniture edges; natural restrained sharpening, no mushy details, no compression artifacts. Warm amber lights and cool turquoise water balanced against rich deep blue night; preserve readable shadow detail. Professional premium hospitality photography, photorealistic.
+Constraints: preserve nighttime setting, villa on left, pool central/right, distant sea on right. Image only: no text, no website UI, no cards, no buttons, no logos, no watermark, no borders or letterboxing. Opaque background. High-resolution 3840x2160 output requested.
