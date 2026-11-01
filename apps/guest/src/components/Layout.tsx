@@ -15,14 +15,17 @@ export function Layout() {
     let observer: IntersectionObserver | undefined;
     const configure = () => {
       observer?.disconnect();
-      const midpoint = Math.min((headerRef.current?.firstElementChild?.clientHeight ?? 80) / 2, window.innerHeight - 1);
+      const viewportHeight = window.innerHeight;
+      // Collapsed preview panels can report zero height; wait for their next resize.
+      if (viewportHeight < 1) return;
+      const midpoint = Math.min((headerRef.current?.firstElementChild?.clientHeight ?? 80) / 2, viewportHeight - 1);
       const update = () => setLightHeader(sections.some((section) => {
         const bounds = section.getBoundingClientRect();
         return bounds.top <= midpoint && bounds.bottom > midpoint;
       }));
       update();
       // Observe the content behind the navigation; change ink, never its background.
-      observer = new IntersectionObserver(update, { rootMargin: `-${midpoint}px 0px -${window.innerHeight - midpoint - 1}px 0px` });
+      observer = new IntersectionObserver(update, { rootMargin: `${-midpoint}px 0px ${midpoint + 1 - viewportHeight}px 0px` });
       sections.forEach((section) => observer?.observe(section));
     };
     configure();

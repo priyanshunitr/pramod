@@ -112,3 +112,9 @@ Switched the hero to the user's selected Anton font at its native 400 weight and
 The user found Anton too thick. Switched to Antonio Regular (400), which retains a similar tall silhouette with visibly lighter strokes. [Google Fonts describes Antonio as an extension of Anton with additional weights](https://github.com/google/fonts/blob/main/ofl/antonio/DESCRIPTION.en_us.html). Size, entrance timing, and sticky scrolling remain unchanged.
 
 Verified Antonio loaded and inspected the live 672 × 790 preview; the word fits without horizontal overflow. Screenshot export later failed after the preview collapsed, so the earlier screenshots remain historical evidence. The production build and TypeScript check passed with temporary `GOMAXPROCS=1` and `RAYON_NUM_THREADS=1` after Windows memory allocation failures; no build configuration was changed. Temporary browser sizing was reset.
+
+## Recovery: collapsed-preview header crash
+
+Restarted the stopped API and three frontend dev servers in a hidden background process; PostgreSQL was already healthy. Verified HTTP 200 from all three frontend roots, API health/readiness, and the guest catalog proxy.
+
+Also reproduced a blank-page error in `Layout`: a zero-height preview made the header midpoint negative, producing an invalid `--1px` intersection-observer margin. Header observation now waits for a positive viewport height and formats margins from signed numbers. Reloaded at the same 0 × 0 viewport and verified that the hero and three room cards render successfully. Screenshot capture remains unavailable while the browser reports zero width. The guest production build, including TypeScript, passed with reduced build-worker counts.
