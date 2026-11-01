@@ -66,7 +66,7 @@ export function HomePage() {
       </div>
     </section>
     <section className="life-at-pramod" ref={lifeSectionRef} data-header-tone="light" aria-labelledby="life-title">
-      <img className="life-photo" src={hotel.heroImage} alt="Illustrative palm-lined pool in warm afternoon light" loading="lazy" width="2000" height="1333" />
+      <img className="life-photo" src={hotel.lifeImage} alt="Illustrative nighttime villa with a turquoise infinity pool and tropical palms" loading="lazy" width="1672" height="941" />
       <div className="life-shade" />
       <div className="life-content container">
         <div className="section-kicker"><span>/ Life at Pramod</span><span>Little comforts. Lovely moments.</span></div>
