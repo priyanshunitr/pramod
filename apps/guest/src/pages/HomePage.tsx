@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
 import { Link } from 'react-router';
 import { featuredRooms, formatMoney, hotel } from '../config/hotel';
@@ -9,6 +10,43 @@ const rateLabel = (minor: number | null, currency?: string) => minor === null ? 
 
 export function HomePage() {
   const rooms = featuredRooms;
+  const lifeSectionRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const section = lifeSectionRef.current;
+    if (!section) return;
+    const photo = section.querySelector<HTMLImageElement>('.life-photo')!;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+    let disposed = false;
+
+    const update = () => {
+      frame = 0;
+      const bounds = section.getBoundingClientRect();
+      // Start at 125% on entry and reach the full view as the section leaves.
+      const progress = Math.max(0, Math.min(1,
+        (window.innerHeight - bounds.top) / (window.innerHeight + bounds.height)));
+      photo.style.setProperty('--life-photo-scale', String(reducedMotion.matches ? 1 : 1.25 - progress * .25));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const resize = new ResizeObserver(schedule);
+    resize.observe(section);
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    reducedMotion.addEventListener('change', schedule);
+    void document.fonts.ready.then(() => { if (!disposed) schedule(); });
+    update();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      reducedMotion.removeEventListener('change', schedule);
+    };
+  }, []);
 
   return <div className="hotel-experience">
     <ArchitecturalHero />
@@ -27,7 +65,7 @@ export function HomePage() {
         <div className="collection-bottom"><p>A little everyday luxury, at your own pace.</p><Link to="/rooms" className="text-link">See rooms & availability <ArrowUpRight size={18} /></Link></div>
       </div>
     </section>
-    <section className="life-at-pramod" data-header-tone="light" aria-labelledby="life-title">
+    <section className="life-at-pramod" ref={lifeSectionRef} data-header-tone="light" aria-labelledby="life-title">
       <img className="life-photo" src={hotel.heroImage} alt="Illustrative palm-lined pool in warm afternoon light" loading="lazy" width="2000" height="1333" />
       <div className="life-shade" />
       <div className="life-content container">

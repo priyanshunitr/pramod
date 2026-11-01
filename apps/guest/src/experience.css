@@ -125,7 +125,7 @@ em { font-style: normal; }
 /* The photograph carries this section; labels stay legible above it. */
 .life-at-pramod { position: relative; overflow: hidden; color: #fff; }
 .life-photo, .life-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-.life-photo { object-position: 50% 60%; }
+.life-photo { object-position: 50% 60%; transform: scale(var(--life-photo-scale, 1.25)); will-change: transform; }
 .life-shade { background: linear-gradient(180deg, #0a2b2670, #12332e20 45%, #0b292b92); }
 .life-content { position: relative; padding-block: 48px 26px; }
 .life-heading { margin: 90px 0 120px; }
@@ -295,6 +295,7 @@ em { font-style: normal; }
   .introduction-links .text-link { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .life-photo { transform: none; will-change: auto; }
   .reveal[data-reveal] { opacity: 1; transform: none; }
   .hero-wordmark-anchor { position: absolute; }
   .architecture-hero[data-scene-ready] .hero-wordmark, .architecture-hero[data-scene-ready] .architecture-scene { animation: none; opacity: 1; transform: none; }
