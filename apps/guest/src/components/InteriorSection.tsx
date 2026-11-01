@@ -12,7 +12,7 @@ export function InteriorSection() {
     if (!section) return;
     const stage = section.querySelector<HTMLElement>('.introduction-stage')!;
     const tracks = [...section.querySelectorAll<HTMLElement>('.filmstrip-track')];
-    const staticLayout = window.matchMedia('(prefers-reduced-motion: reduce), (max-height: 640px)');
+    const staticLayout = window.matchMedia('(prefers-reduced-motion: reduce)');
     let travel: number[] = [];
     let distance = 0;
     let frame = 0;

@@ -96,7 +96,7 @@ em { font-style: normal; }
 .filmstrip-track::after { right: 8px; }
 .filmstrip-frame { flex: 0 0 auto; width: 100%; }
 .filmstrip-frame figure { margin: 0; }
-.filmstrip-frame img { width: 100%; height: clamp(240px, 44svh, 440px); }
+.filmstrip-frame img { width: 100%; height: max(240px, 44svh); }
 .filmstrip-frame figcaption { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; color: #e4ca94; font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; }
 .filmstrip-frame figcaption > span:last-child { flex-shrink: 0; }
 .stay-introduction[data-scroll-mode='static'] .introduction-grid { height: auto; }
@@ -198,7 +198,7 @@ em { font-style: normal; }
   .filmstrip-columns { gap: 12px; }
   .filmstrip-track { padding-inline: 20px; }
   .filmstrip-frame figcaption { font-size: 8px; gap: 4px; }
-  .filmstrip-frame img { height: clamp(220px, 40svh, 360px); }
+  .filmstrip-frame img { height: max(220px, 40svh); }
   .collection-row { gap: 15px; min-height: 145px; }
   .collection-name h3 { font-size: 7vw; }
   .collection-preview { width: 120px; height: 85px; }
@@ -251,7 +251,7 @@ em { font-style: normal; }
   .filmstrip-track::before { left: 6px; }
   .filmstrip-track::after { right: 6px; }
   .filmstrip-frame figcaption { font-size: 8px; gap: 4px; }
-  .filmstrip-frame img { height: clamp(150px, 26svh, 230px); }
+  .filmstrip-frame img { height: max(150px, 36svh); }
   .room-collection { padding-block: 40px 28px; }
   .room-collection .section-kicker { margin-bottom: 28px; }
   .collection-row { padding-block: 27px; min-height: 127px; gap: 10px; }
@@ -287,6 +287,18 @@ em { font-style: normal; }
   .page-content { padding-top: 35px; }
   .page-heading h1 { font-size: 45px; }
   .room-card h3 { font-size: 29px; }
+}
+/* Keep the rolls active in laptop windows and landscape views; compact the copy instead. */
+@media (max-height: 640px) {
+  .introduction-copy { padding-block: 82px 18px; }
+  .introduction-copy h2 { font-size: clamp(28px, min(5.4vw, 10svh), 60px); line-height: 1.05; }
+  .introduction-copy h2 br:nth-of-type(odd) { display: none; }
+  .introduction-copy > p { font-size: 11px; line-height: 1.55; margin: 14px 0; }
+  .introduction-copy > .introduction-kicker { font-size: 9px; margin: 0 0 12px; }
+  .introduction-links { gap: 10px; }
+  .introduction-links .round-link { font-size: 10px; gap: 12px; }
+  .introduction-links .round-link > span { width: 32px; height: 32px; flex-shrink: 0; }
+  .introduction-links .text-link { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .reveal[data-reveal] { opacity: 1; transform: none; }
