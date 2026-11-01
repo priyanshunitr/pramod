@@ -70,13 +70,15 @@ export function HomePage() {
       <div className="life-shade" />
       <div className="life-content container">
         <div className="section-kicker"><span>/ Life at Pramod</span><span>Little comforts. Lovely moments.</span></div>
-        <Reveal className="life-heading"><h2 id="life-title">Less rush.<br />More living.</h2><Link to="/gallery" className="button glass">Take a look around <ArrowUpRight size={18} /></Link></Reveal>
-        <div className="comfort-notes">{[
-          { Icon: Coffee, title: 'Slow mornings', copy: 'One more cup. No hurry.' },
-          { Icon: Waves, title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
-          { Icon: Wifi, title: 'Stay connected', copy: 'As much, or as little, as you like.' },
-          { Icon: ConciergeBell, title: 'A warm welcome', copy: 'The little things, taken care of.' },
-        ].map(({ Icon, title, copy }, index) => <Reveal key={title} className="comfort-note" delay={index * 80}><Icon size={23} strokeWidth={1.4} /><div><h3>{title}</h3><p>{copy}</p></div></Reveal>)}</div>
+        <Reveal className="life-composition">
+          <div className="life-heading"><h2 id="life-title">Less rush.<br />More living.</h2><Link to="/gallery" className="button glass">Take a look around <ArrowUpRight size={18} /></Link></div>
+          {[
+            { Icon: Coffee, title: 'Slow mornings', copy: 'One more cup. No hurry.' },
+            { Icon: Waves, title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
+            { Icon: Wifi, title: 'Stay connected', copy: 'As much, or as little, as you like.' },
+            { Icon: ConciergeBell, title: 'A warm welcome', copy: 'The little things, taken care of.' },
+          ].map(({ Icon, title, copy }, index) => <div key={title} className={`comfort-note comfort-note-${index + 1}`}><Icon size={25} strokeWidth={1.3} aria-hidden="true" /><div><h3>{title}</h3><p>{copy}</p></div></div>)}
+        </Reveal>
         <p className="experience-note">A glimpse of the experience · Illustrative amenities and photography</p>
       </div>
     </section>
