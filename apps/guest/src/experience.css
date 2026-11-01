@@ -34,7 +34,7 @@ em { font-style: normal; }
 .mobile-nav a { min-height: 44px; }
 
 /* Real alpha foreground lets the roof and palms sit in front of the title. */
-.architecture-hero { --scene-arrival-duration: 1.6s; --hero-height: clamp(640px, 100svh, 900px); --wordmark-top: calc(var(--hero-height) * .08); position: relative; height: var(--hero-height); overflow: clip; isolation: isolate; background: #79bbce; color: #fff; }
+.architecture-hero { --scene-arrival-duration: 1.6s; --hero-height: clamp(640px, 100svh, 900px); --hero-extension: clamp(56px, 10svh, 100px); --wordmark-top: calc(var(--hero-height) * .08); position: relative; height: calc(var(--hero-height) + var(--hero-extension)); overflow: clip; isolation: isolate; background: #79bbce; color: #fff; }
 /* Native sticky positioning keeps the text still without per-frame JS transforms.
    Clip (rather than hidden) preserves the page as its scrolling ancestor. */
 .hero-wordmark-anchor { position: sticky; top: var(--wordmark-top); width: 100%; z-index: 0; overflow: clip; }
@@ -175,7 +175,8 @@ em { font-style: normal; }
 @keyframes wordmark-arrive { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 @keyframes fade-arrive { from { opacity: 0; } to { opacity: 1; } }
 
-@media (min-aspect-ratio: 19/10) { .architecture-hero { --hero-height: clamp(600px, 100svh, 900px); --wordmark-top: calc(var(--hero-height) * .07); } .architecture-cutout { bottom: -13%; } }
+/* Reveal the formerly cropped pool while keeping the building's vertical position. */
+@media (min-aspect-ratio: 19/10) { .architecture-hero { --hero-height: clamp(600px, 100svh, 900px); --hero-extension: calc(var(--hero-height) * .13); --wordmark-top: calc(var(--hero-height) * .07); } }
 @media (max-width: 1100px) {
   .container { width: calc(100% - 64px); }
   .header-inner { width: calc(100% - 48px); gap: 18px; }
