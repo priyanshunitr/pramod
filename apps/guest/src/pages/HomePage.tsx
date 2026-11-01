@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { featuredRooms, formatMoney, hotel } from '../config/hotel';
 import { Reveal } from '../components/Reveal';
@@ -73,11 +73,11 @@ export function HomePage() {
         <Reveal className="life-composition">
           <div className="life-heading"><h2 id="life-title">Less rush.<br />More living.</h2><Link to="/gallery" className="button glass">Take a look around <ArrowUpRight size={18} /></Link></div>
           {[
-            { Icon: Coffee, title: 'Slow mornings', copy: 'One more cup. No hurry.' },
-            { Icon: Waves, title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
-            { Icon: Wifi, title: 'Stay connected', copy: 'As much, or as little, as you like.' },
-            { Icon: ConciergeBell, title: 'A warm welcome', copy: 'The little things, taken care of.' },
-          ].map(({ Icon, title, copy }, index) => <div key={title} className={`comfort-note comfort-note-${index + 1}`}><Icon size={25} strokeWidth={1.3} aria-hidden="true" /><div><h3>{title}</h3><p>{copy}</p></div></div>)}
+            { image: '/images/classic-room.jpg', alt: 'Illustrative guest room with a comfortable bed', title: 'Slow mornings', copy: 'One more cup. No hurry.' },
+            { image: '/images/hotel-pool.jpg', alt: 'Illustrative swimming pool framed by palm trees', title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
+            { image: '/images/family-suite.jpg', alt: 'Illustrative suite interior with a spacious bed', title: 'Stay connected', copy: 'As much, or as little, as you like.' },
+            { image: '/images/deluxe-room.jpg', alt: 'Illustrative warm, inviting room interior', title: 'A warm welcome', copy: 'The little things, taken care of.' },
+          ].map(({ image, alt, title, copy }, index) => <figure key={title} className={`comfort-note comfort-note-${index + 1}`}><img src={image} alt={alt} width="480" height="300" loading="lazy" /><figcaption><h3>{title}</h3><p>{copy}</p></figcaption></figure>)}
         </Reveal>
         <p className="experience-note">A glimpse of the experience · Illustrative amenities and photography</p>
       </div>
