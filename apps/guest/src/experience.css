@@ -68,28 +68,32 @@ em { font-style: normal; }
 .search-fields .button { min-height: 56px; }
 .search-note { color: #68715f; font-size: 11px; margin-top: 12px; }
 
-/* Editorial introduction and interactive room cards. */
+/* Editorial introduction and a manually scrolled interior filmstrip. */
 .stay-introduction { padding-block: 78px 110px; }
 .section-kicker { display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 11px; }
 .section-kicker h2 { font-size: inherit; font-weight: 400; letter-spacing: 0; }
-.introduction-grid { display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 40px; margin-top: 60px; }
+.introduction-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; gap: 40px; margin-top: 60px; }
 .introduction-copy h2 { font-size: clamp(70px, 8.4vw, 124px); line-height: .99; letter-spacing: -.065em; }
 .introduction-copy h2 > span { color: #858e7c; }
 .introduction-copy > p { max-width: 335px; color: #687060; font-size: 13px; line-height: 1.85; margin: 29px 0 25px; }
 .round-link { display: inline-flex; align-items: center; gap: 30px; font-size: 12px; }
 .round-link > span { width: 42px; height: 42px; border: 1px solid #aab3a3; border-radius: 50%; display: grid; place-items: center; }
-.room-fan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 34px; min-width: 0; padding: 12px; }
-.fan-card { position: relative; width: 100%; max-width: 250px; min-width: 0; justify-self: center; padding: 8px; background: #fff; border-radius: 11px; transition: transform .7s var(--ease-out); transform: rotate(var(--tilt)); }
-.fan-card > img { width: 100%; height: auto; aspect-ratio: 1.43; border-radius: 6px; }
-.fan-card-0 { --tilt: -3deg; }
-.fan-card-1 { --tilt: 3deg; }
-.fan-card-2 { --tilt: -2deg; grid-column: 1 / -1; width: calc((100% - 34px) / 2); }
-.fan-card-caption { padding: 16px 9px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fan-card-caption strong { font-size: 17px; letter-spacing: -.4px; font-weight: 550; }
-.fan-card-caption small { display: block; margin-top: 5px; font-size: 9px; color: #7b8076; }
-.fan-card-price { padding: 0 9px 9px; font-size: 14px; }
-.fan-card-price > span { font-size: 10px; color: #7c8178; }
-.fan-note { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 15px; color: #767e6e; font-size: 10px; text-align: center; }
+.interior-reel { min-width: 0; }
+.filmstrip-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: #687060; font-size: 10px; }
+.filmstrip-viewport { overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 14px; background: #181b17; scrollbar-width: thin; scrollbar-color: #7c806f #181b17; }
+.filmstrip-track { position: relative; display: flex; gap: 14px; width: max-content; margin: 0; padding: 34px 14px; list-style: none; }
+.filmstrip-track::before, .filmstrip-track::after { content: ''; position: absolute; left: 0; right: 0; height: 9px; background: repeating-linear-gradient(90deg, transparent 0 8px, #f5f6ee 8px 21px, transparent 21px 29px); pointer-events: none; }
+.filmstrip-track::before { top: 10px; }
+.filmstrip-track::after { bottom: 10px; }
+.filmstrip-frame { flex: 0 0 auto; width: clamp(220px, 23vw, 290px); scroll-snap-align: start; }
+.filmstrip-frame figure { margin: 0; }
+.filmstrip-frame img { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.filmstrip-frame figcaption { display: flex; justify-content: space-between; gap: 12px; padding-top: 12px; color: #e4ca94; font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; }
+.filmstrip-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; }
+.filmstrip-footer .text-link { font-size: 11px; }
+.filmstrip-controls { display: flex; gap: 8px; }
+.filmstrip-controls button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: #273022; border: 1px solid #aab3a3; border-radius: 50%; }
+.filmstrip-controls button:disabled { opacity: .35; cursor: default; }
 
 /* Wide, quiet rows mirror the reference's dark collection chapter. */
 .room-collection { padding: 65px 0 45px; background: #111411; color: #f5f6ee; overflow: hidden; }
@@ -161,7 +165,6 @@ em { font-style: normal; }
 .reveal { transition: opacity .9s var(--ease-out), transform 1s var(--ease-out); transition-delay: var(--reveal-delay, 0ms); }
 .reveal[data-reveal='waiting'] { opacity: 0; transform: translateY(35px); }
 .reveal:focus-within { opacity: 1; transform: none; transition-delay: 0ms; }
-.room-fan[data-reveal='waiting'] .fan-card { transform: translateY(45px) rotate(0); }
 @keyframes architecture-arrive { from { opacity: 0; transform: translateY(60px) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes wordmark-arrive { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 @keyframes fade-arrive { from { opacity: 0; } to { opacity: 1; } }
@@ -172,8 +175,6 @@ em { font-style: normal; }
   .header-inner { width: calc(100% - 48px); gap: 18px; }
   .desktop-nav a { padding-inline: 13px; }
   .header-actions { gap: 15px; }
-  .fan-card-caption strong { font-size: 15px; }
-  .fan-card-caption small { font-size: 8px; }
   .comfort-notes { grid-template-columns: 1fr 1fr; }
   .collection-preview { width: 150px; height: 110px; left: 8%; }
 }
@@ -186,8 +187,6 @@ em { font-style: normal; }
   .architecture-cutout { width: max(130%, 132svh); }
   .introduction-grid { gap: 38px; grid-template-columns: 1fr; }
   .introduction-copy h2 { font-size: 76px; }
-  .room-fan { width: min(100%, 600px); margin-inline: auto; }
-  .fan-note { font-size: 9px; }
   .stay-introduction { padding-bottom: 100px; }
   .collection-row { gap: 15px; min-height: 145px; }
   .collection-name h3 { font-size: 7vw; }
@@ -229,12 +228,9 @@ em { font-style: normal; }
   .introduction-grid { grid-template-columns: 1fr; gap: 35px; margin-top: 39px; }
   .introduction-copy h2 { font-size: clamp(70px, 22.5vw, 88px); }
   .introduction-copy > p { max-width: 300px; font-size: 13px; }
-  .room-fan { grid-template-columns: minmax(0, 1fr); width: 100%; gap: 28px; }
-  .fan-card { width: 100%; max-width: 230px; }
-  .fan-card-caption { padding: 13px 5px 9px; }
-  .fan-card-caption strong { font-size: 15px; }
-  .fan-card-caption small { font-size: 8px; }
-  .fan-card-price { font-size: 13px; padding-inline: 5px; }
+  .filmstrip-frame { width: min(230px, 70vw); }
+  .filmstrip-heading { font-size: 9px; }
+  .filmstrip-footer .text-link { font-size: 10px; }
   .room-collection { padding-block: 40px 28px; }
   .room-collection .section-kicker { margin-bottom: 28px; }
   .collection-row { padding-block: 27px; min-height: 127px; gap: 10px; }
@@ -274,7 +270,6 @@ em { font-style: normal; }
 @media (prefers-reduced-motion: reduce) {
   .reveal[data-reveal] { opacity: 1; transform: none; }
   .hero-wordmark-anchor { position: absolute; }
-  .room-fan[data-reveal] .fan-card { transform: rotate(var(--tilt)); }
   .architecture-hero[data-scene-ready] .hero-wordmark, .architecture-hero[data-scene-ready] .architecture-scene { animation: none; opacity: 1; transform: none; }
   .hero-bottom, .hero-side-note { animation: none; }
   .collection-row:hover .collection-name h3, .collection-row:focus-visible .collection-name h3 { transform: none; }

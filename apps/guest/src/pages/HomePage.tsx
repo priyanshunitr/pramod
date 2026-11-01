@@ -1,9 +1,10 @@
-import { ArrowDown, ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
+import { ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
 import { Link } from 'react-router';
 import { featuredRooms, formatMoney, hotel } from '../config/hotel';
 import { StaySearch } from '../components/StaySearch';
 import { Reveal } from '../components/Reveal';
 import { ArchitecturalHero } from '../components/ArchitecturalHero';
+import { InteriorFilmstrip } from '../components/InteriorFilmstrip';
 
 const rateLabel = (minor: number | null, currency?: string) => minor === null ? 'Rate on request' : `From ${formatMoney(minor / 100, currency)} / night`;
 
@@ -25,14 +26,7 @@ export function HomePage() {
           <p>Good mornings. Long conversations. Nowhere else you need to be. Welcome to your own little corner of {hotel.name}.</p>
           <Link className="round-link" to="/rooms">Find your kind of comfort <span><ArrowUpRight size={20} /></span></Link>
         </Reveal>
-        <Reveal className="room-fan" delay={120}>
-          {rooms.map((room, index) => <Link key={room.slug} to={`/rooms/${room.slug}`} className={`fan-card fan-card-${index}`} aria-label={`Explore ${room.name}`}>
-            <img src={room.image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
-            <div className="fan-card-caption"><span><strong>{room.name}</strong><small>Up to {room.maxGuests} guests · Your space to unwind</small></span><ArrowUpRight size={21} /></div>
-            <div className="fan-card-price">{rateLabel(room.startingRateMinor, room.currency)}</div>
-          </Link>)}
-          <span className="fan-note">A room for every kind of getaway. <ArrowDown size={14} /></span>
-        </Reveal>
+        <Reveal className="interior-reel" delay={120}><InteriorFilmstrip /></Reveal>
       </div>
     </section>
     <section className="room-collection" id="rooms" data-header-tone="light" aria-labelledby="collection-title">
