@@ -124,6 +124,9 @@ em { font-style: normal; }
 
 /* The photograph carries this section; labels stay legible above it. */
 .life-at-pramod { position: relative; min-height: 100svh; overflow: clip; color: #fff; }
+.life-at-pramod[data-scroll-mode='pinned'] { height: calc(var(--life-stage-height) + var(--life-scroll-distance)); }
+.life-stage { position: relative; min-height: 100svh; overflow: clip; }
+.life-at-pramod[data-scroll-mode='pinned'] .life-stage { position: sticky; top: 0; }
 .life-photo, .life-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
 .life-photo { object-fit: cover; object-position: center; transform: scale(var(--life-photo-scale, 2.2)); will-change: transform; }
 .life-shade { background: radial-gradient(ellipse at center, #0a202b70, transparent 70%), linear-gradient(180deg, #0a2b2670, #12332e20 45%, #0b292b92); }
@@ -132,16 +135,25 @@ em { font-style: normal; }
 .life-content > .section-kicker > span:first-child { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
 .life-content > .section-kicker > span:last-child { color: #e1e8de; }
 .life-composition { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr); grid-template-rows: repeat(2, 1fr); grid-template-areas: 'morning heading pool' 'connected heading welcome'; align-items: center; gap: 28px; padding-block: clamp(24px, 4svh, 60px); }
-.life-heading { grid-area: heading; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; text-align: center; margin: 0; transition: opacity .85s var(--ease-out), transform 1.1s var(--ease-out); transition-delay: 80ms; }
+.life-heading { grid-area: heading; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; text-align: center; margin: 0; }
 .life-heading h2 { font-size: clamp(60px, 7.2vw, 112px); line-height: 1.02; }
 .button.glass { border-color: #ffffff65; color: #fff; background: #ffffff1a; backdrop-filter: blur(10px); margin-top: 30px; }
 .button.glass:hover { background: #ffffff35; }
-/* White photo prints echo the original room cards, without shadows or hover effects. */
-.comfort-note { justify-self: center; width: min(100%, 240px); min-width: 0; margin: 0; padding: 9px; color: #1b2420; background: #fff; border-radius: 5px; transform: rotate(var(--comfort-tilt)); transition: opacity .85s var(--ease-out), transform 1.1s var(--ease-out); transition-delay: calc(160ms + var(--comfort-order) * 110ms); }
-.comfort-note-1 { grid-area: morning; --comfort-order: 0; --comfort-reveal-x: -45px; --comfort-tilt: -3deg; }
-.comfort-note-2 { grid-area: pool; --comfort-order: 1; --comfort-reveal-x: 45px; --comfort-tilt: 3deg; }
-.comfort-note-3 { grid-area: connected; --comfort-order: 2; --comfort-reveal-x: -45px; --comfort-tilt: 2deg; }
-.comfort-note-4 { grid-area: welcome; --comfort-order: 3; --comfort-reveal-x: 45px; --comfort-tilt: -2deg; }
+/* Two-sided photo prints tumble with scroll, without shadows or hover motion.
+   Keep opacity/filter/overflow off the spinner: they flatten its 3D faces. */
+.comfort-flight { justify-self: center; width: min(100%, 240px); min-width: 0; perspective: 1100px; }
+.comfort-flight-1 { grid-area: morning; --comfort-tilt: -3deg; }
+.comfort-flight-2 { grid-area: pool; --comfort-tilt: 3deg; }
+.comfort-flight-3 { grid-area: connected; --comfort-tilt: 2deg; }
+.comfort-flight-4 { grid-area: welcome; --comfort-tilt: -2deg; }
+.comfort-spinner { position: relative; transform-style: preserve-3d; transform: rotate(var(--comfort-tilt)); }
+.life-at-pramod:not([data-scroll-mode='static']) .comfort-spinner { will-change: transform; }
+.comfort-note, .comfort-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 5px; }
+.comfort-note { width: 100%; margin: 0; padding: 9px; color: #1b2420; background: #fff; transform: translateZ(.5px); }
+.comfort-back { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px; color: #516157; background: #f5f3eb; border: 9px solid #fff; transform: rotateY(180deg) translateZ(.5px); }
+.comfort-back::before { content: ''; position: absolute; inset: 8px; border: 1px solid #51615730; border-radius: 2px; }
+.comfort-back > span { font-size: clamp(17px, 2vw, 26px); font-weight: 600; letter-spacing: -.06em; }
+.comfort-back > small { font-size: 8px; letter-spacing: .02em; text-align: center; }
 .comfort-note > img { width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: cover; border-radius: 2px; }
 .comfort-note > figcaption { padding: 12px 5px 10px; text-align: left; }
 .comfort-note h3 { font-size: 14px; font-weight: 500; line-height: 1.25; }
@@ -181,10 +193,6 @@ em { font-style: normal; }
 .reveal { transition: opacity .9s var(--ease-out), transform 1s var(--ease-out); transition-delay: var(--reveal-delay, 0ms); }
 .reveal[data-reveal='waiting'] { opacity: 0; transform: translateY(35px); }
 .reveal:focus-within { opacity: 1; transform: none; transition-delay: 0ms; }
-/* One shared entrance keeps the center copy and surrounding cards in sync. */
-.life-composition.reveal { opacity: 1; transform: none; transition: none; }
-.life-composition[data-reveal='waiting']:not(:focus-within) .life-heading { opacity: 0; transform: translate3d(0, 28px, 0); }
-.life-composition[data-reveal='waiting']:not(:focus-within) .comfort-note { opacity: 0; transform: translate3d(var(--comfort-reveal-x), 24px, 0) rotate(calc(var(--comfort-tilt) * 2)); }
 @keyframes architecture-arrive { from { opacity: 0; transform: translateY(60px) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes wordmark-arrive { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
 @keyframes fade-arrive { from { opacity: 0; } to { opacity: 1; } }
@@ -280,6 +288,7 @@ em { font-style: normal; }
   .life-composition { gap: 16px; padding-block: 24px; grid-template-rows: auto minmax(210px, 1fr) auto; }
   .life-heading h2 { font-size: clamp(48px, 15.5vw, 67px); }
   .comfort-note { padding: 6px; }
+  .comfort-back { border-width: 6px; padding: 10px; }
   .comfort-note > figcaption { padding: 10px 3px 8px; }
   .comfort-note h3 { font-size: 12px; }
   .comfort-note p { font-size: 10px; }
@@ -313,7 +322,7 @@ em { font-style: normal; }
 @media (prefers-reduced-motion: reduce) {
   .life-photo { transform: none; will-change: auto; }
   .reveal[data-reveal] { opacity: 1; transform: none; }
-  .life-composition[data-reveal] .life-heading, .life-composition[data-reveal] .comfort-note { opacity: 1; transform: none; transition: none; }
+  .life-at-pramod .comfort-spinner { transform: rotate(var(--comfort-tilt)) !important; will-change: auto; }
   .hero-wordmark-anchor { position: absolute; }
   .architecture-hero[data-scene-ready] .hero-wordmark, .architecture-hero[data-scene-ready] .architecture-scene { animation: none; opacity: 1; transform: none; }
   .hero-bottom, .hero-side-note { animation: none; }
