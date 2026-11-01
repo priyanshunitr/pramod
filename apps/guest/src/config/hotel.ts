@@ -1,6 +1,6 @@
 // Replace this illustrative identity and room presentation with the hotel's own content.
 import { propertySlug } from '@hotel/api-client';
-export const hotel = { name: 'Pramod', descriptor: 'A BOUTIQUE STAY', slug: propertySlug, timezone: 'Asia/Kolkata', heroImage: '/images/hotel-pool.jpg', lifeImage: '/images/pramod-night-retreat-v1.png' };
+export const hotel = { name: 'Pramod', descriptor: 'A BOUTIQUE STAY', slug: propertySlug, timezone: 'Asia/Kolkata', heroImage: '/images/hotel-pool.jpg', lifeImage: '/images/pramod-night-retreat-v2.png' };
 
 // Homepage content is maintained here, independently of bookable inventory.
 // These illustrative starting rates are not booking quotes.
