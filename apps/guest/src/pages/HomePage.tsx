@@ -16,7 +16,9 @@ export function HomePage() {
     const section = lifeSectionRef.current;
     if (!section) return;
     const photo = section.querySelector<HTMLImageElement>('.life-photo')!;
+    const cardSlots = [...section.querySelectorAll<HTMLElement>('.comfort-entry')];
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let cards: { slot: HTMLElement; top: number; height: number }[] = [];
     let frame = 0;
     let disposed = false;
 
@@ -27,23 +29,43 @@ export function HomePage() {
       const progress = Math.max(0, Math.min(1,
         (window.innerHeight - bounds.top) / (window.innerHeight + bounds.height * .5)));
       photo.style.setProperty('--life-photo-scale', String(reducedMotion.matches ? 1 : 2.2 - progress * 1.2));
+      cards.forEach(({ slot, top, height }, index) => {
+        // The stationary grid slot defines the scroll range, not the moving photo.
+        // A small right-column offset staggers the pairs without a time delay.
+        const start = window.innerHeight * (.96 - (index % 2) * .035);
+        const travel = Math.max(1, Math.min(window.innerHeight * .45, height * 1.4));
+        const entered = reducedMotion.matches ? 1 : Math.max(0, Math.min(1,
+          (start - (bounds.top + top)) / travel));
+        const eased = entered * entered * (3 - 2 * entered);
+        slot.style.setProperty('--comfort-outset', String(1 - eased));
+      });
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    const resize = new ResizeObserver(schedule);
+    const measure = () => {
+      const sectionTop = section.getBoundingClientRect().top;
+      cards = cardSlots.map(slot => {
+        const bounds = slot.getBoundingClientRect();
+        return { slot, top: bounds.top - sectionTop, height: bounds.height };
+      });
+      cancelAnimationFrame(frame);
+      update();
+    };
+    const resize = new ResizeObserver(measure);
     resize.observe(section);
+    cardSlots.forEach(slot => resize.observe(slot));
     window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule);
+    window.addEventListener('resize', measure);
     reducedMotion.addEventListener('change', schedule);
-    void document.fonts.ready.then(() => { if (!disposed) schedule(); });
-    update();
+    void document.fonts.ready.then(() => { if (!disposed) measure(); });
+    measure();
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       resize.disconnect();
       window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
+      window.removeEventListener('resize', measure);
       reducedMotion.removeEventListener('change', schedule);
     };
   }, []);
@@ -77,9 +99,9 @@ export function HomePage() {
             { image: '/images/hotel-pool.jpg', alt: 'Illustrative swimming pool framed by palm trees', title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
             { image: '/images/family-suite.jpg', alt: 'Illustrative suite interior with a spacious bed', title: 'Stay connected', copy: 'As much, or as little, as you like.' },
             { image: '/images/deluxe-room.jpg', alt: 'Illustrative warm, inviting room interior', title: 'A warm welcome', copy: 'The little things, taken care of.' },
-          ].map(({ image, alt, title, copy }, index) => <Reveal key={title} className={`comfort-entry comfort-entry-${index + 1}`}>
+          ].map(({ image, alt, title, copy }, index) => <div key={title} className={`comfort-entry comfort-entry-${index + 1}`}>
             <figure className="comfort-note"><img src={image} alt={alt} width="480" height="300" loading="lazy" /><figcaption><h3>{title}</h3><p>{copy}</p></figcaption></figure>
-          </Reveal>)}
+          </div>)}
         </div>
         <p className="experience-note">A glimpse of the experience · Illustrative amenities and photography</p>
       </div>
