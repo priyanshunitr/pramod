@@ -50,8 +50,9 @@ export function InteriorSection() {
       });
       starts = paths.map(path => path.start);
       travel = paths.map(path => path.end - path.start);
-      // Signed travel gives opposite directions; both rolls finish before release.
-      distance = Math.max(0, ...travel.map(Math.abs));
+      // Keep enough frames to cover both viewports, but finish in half the scroll.
+      // Signed travel preserves opposite directions and a shared release point.
+      distance = Math.max(0, ...travel.map(Math.abs)) / 2;
       section.style.setProperty('--film-scroll-distance', `${distance}px`);
       cancelAnimationFrame(frame);
       update();
