@@ -4,7 +4,7 @@ import { featuredRooms, formatMoney, hotel } from '../config/hotel';
 import { StaySearch } from '../components/StaySearch';
 import { Reveal } from '../components/Reveal';
 import { ArchitecturalHero } from '../components/ArchitecturalHero';
-import { InteriorFilmstrip } from '../components/InteriorFilmstrip';
+import { InteriorSection } from '../components/InteriorSection';
 
 const rateLabel = (minor: number | null, currency?: string) => minor === null ? 'Rate on request' : `From ${formatMoney(minor / 100, currency)} / night`;
 
@@ -18,17 +18,7 @@ export function HomePage() {
       <StaySearch />
       <p className="search-note">Choose your dates to check room availability.</p>
     </section>
-    <section className="stay-introduction container" id="about" aria-labelledby="intro-title">
-      <div className="section-kicker"><span>/ A different pace</span><span>Stay a little. Feel a lot.</span></div>
-      <div className="introduction-grid">
-        <Reveal className="introduction-copy">
-          <h2 id="intro-title">Stay.<br />Slow.<br />Savour.<br /><span>Repeat.</span></h2>
-          <p>Good mornings. Long conversations. Nowhere else you need to be. Welcome to your own little corner of {hotel.name}.</p>
-          <Link className="round-link" to="/rooms">Find your kind of comfort <span><ArrowUpRight size={20} /></span></Link>
-        </Reveal>
-        <Reveal className="interior-reel" delay={120}><InteriorFilmstrip /></Reveal>
-      </div>
-    </section>
+    <InteriorSection />
     <section className="room-collection" id="rooms" data-header-tone="light" aria-labelledby="collection-title">
       <div className="container">
         <div className="section-kicker"><h2 id="collection-title">/ The room collection</h2><span>Make yourself at home.</span></div>
