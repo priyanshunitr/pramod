@@ -7,11 +7,14 @@ const flights = [
   { delay: .18, duration: .7, direction: -1, tilt: -2 },
 ] as const;
 
-// A full front → edge → back → edge → front tumble, sampled directly from scroll.
-// The final 12% is a readable hold; there is no clock or easing loop to catch up.
+// Enter at the selected mid-tumble pose: three printed backs and one narrow photo.
+// Continue the same flight to its readable finish, sampled directly from scroll.
+const entryProgress = .3;
+
 export function comfortPose(progress: number, index: number, compact = false) {
   const flight = flights[index % flights.length]!;
-  const phase = clamp((progress - flight.delay) / flight.duration);
+  const timeline = entryProgress + (1 - entryProgress) * clamp(progress);
+  const phase = clamp((timeline - flight.delay) / flight.duration);
   const remaining = 1 - phase;
   const arc = phase === 1 ? 0 : Math.sin(phase * Math.PI);
   const side = index % 2 === 0 ? -1 : 1;

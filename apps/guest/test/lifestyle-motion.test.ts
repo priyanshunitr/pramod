@@ -14,13 +14,23 @@ test('overscroll is bounded and all four photos settle front-facing before relea
   }
 });
 
-test('each staggered flight reveals its back and is identical when scrolling backwards', () => {
+test('the entry pose shows three printed backs and the fourth photo, already tilted', () => {
+  for (const compact of [false, true]) {
+    const initial = Array.from({ length: 4 }, (_, index) => comfortPose(0, index, compact));
+    const facing = initial.map(pose => Math.cos(pose.rotateY * Math.PI / 180));
+    assert.ok(facing.slice(0, 3).every(value => value < 0));
+    assert.ok(facing[3]! > 0 && facing[3]! < .6);
+    assert.ok(initial.every(pose => Math.abs(pose.rotateX) > 20));
+  }
+});
+
+test('flights turn toward their photos at different times and reverse deterministically', () => {
   const samples = Array.from({ length: 101 }, (_, index) => index / 100);
   const edgeCrossings: number[] = [];
   for (let card = 0; card < 4; card++) {
     const poses = samples.map(progress => comfortPose(progress, card));
     assert.ok(poses.some(pose => Math.abs(pose.rotateY) > 95 && Math.abs(pose.rotateY) < 265));
-    edgeCrossings.push(poses.findIndex(pose => Math.abs(pose.rotateY) < 270));
+    edgeCrossings.push(poses.findIndex(pose => Math.abs(pose.rotateY) < 90));
     const forward = samples.map(progress => comfortTransform(progress, card));
     const backward = [...samples].reverse().map(progress => comfortTransform(progress, card)).reverse();
     assert.deepEqual(backward, forward);
