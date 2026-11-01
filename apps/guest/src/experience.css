@@ -57,15 +57,11 @@ em { font-style: normal; }
 .hero-bottom-copy p { font-size: 18px; line-height: 1.4; letter-spacing: -.35px; }
 .hero-bottom-copy a { display: inline-flex; align-items: center; gap: 14px; padding-top: 13px; font-size: 11px; }
 
-/* Dates remain a real availability search. */
-.arrival-search { padding-block: 54px 24px; }
-.search-intro { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-.search-intro p { font-size: 13px; color: #656b62; }
+/* Availability search on room listing and detail pages. */
 .stay-search { box-shadow: none; background: transparent; border-color: #d7dcd1; border-radius: 12px; padding: 22px; }
 .field-caption { color: #636b5e; }
 .search-fields input, .search-fields select { color: #232b24; }
 .search-fields .button { min-height: 56px; }
-.search-note { color: #68715f; font-size: 11px; margin-top: 12px; }
 
 /* Editorial introduction with two vertical interior film rolls on the right. */
 .stay-introduction { position: relative; }
@@ -226,14 +222,10 @@ em { font-style: normal; }
   .hero-scroll > span:first-child { width: 42px; height: 42px; }
   .hero-bottom-copy p { font-size: 14px; }
   .hero-bottom-copy a { min-height: 44px; padding-top: 7px; }
-  .arrival-search { padding-block: 32px 5px; }
-  .search-intro { display: block; margin-bottom: 17px; }
-  .search-intro p { font-size: 12px; margin-top: 5px; }
   .stay-search { padding: 19px 11px; }
   .search-fields { gap: 22px 8px; }
   .search-fields input, .search-fields select { height: 32px; font-size: 12px; }
   .search-fields .button { min-height: 48px; font-size: 11px; padding-inline: 11px; }
-  .search-note { font-size: 10px; }
   .section-kicker { font-size: 9px; gap: 16px; }
   .section-kicker > span:last-child { text-align: right; }
   .introduction-grid { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 0; }

@@ -66,8 +66,6 @@ svg { flex-shrink: 0; }
 .search-fields input, .search-fields select { width: 100%; min-width: 0; border: 0; background: transparent; color: #344336; font-size: 12px; padding: 2px 0; height: 25px; }
 .search-fields input::-webkit-calendar-picker-indicator { opacity: .5; width: 13px; }
 .search-fields .button { min-height: 57px; padding-inline: 25px; }
-.search-note { text-align: center; font-size: 10px; color: #7c8274; margin-top: 13px; }
-.search-note span { color: #999c90; }
 
 /* Room collection and editorial content */
 .section { padding-block: 78px 83px; }
@@ -280,7 +278,6 @@ svg { flex-shrink: 0; }
   .search-fields > label:first-child { padding-left: 10px; }
   .search-fields > label:nth-child(2) { border-right: 0; }
   .search-fields > .button { min-height: 49px; }
-  .search-note { max-width: 380px; margin-inline: auto; }
   .section { padding-block: 57px; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: 17px; }
   .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 35px 25px; }
@@ -320,8 +317,6 @@ svg { flex-shrink: 0; }
   .field-caption > svg { width: 14px; }
   .search-fields input, .search-fields select { font-size: 11px; }
   .search-fields > .button { padding: 13px 10px; font-size: 11px; gap: 8px; }
-  .search-note { font-size: 9px; line-height: 1.9; max-width: 290px; }
-  .search-note span { display: block; }
   .section { padding-block: 48px; }
   .section-heading { margin-bottom: 27px; }
   h2 { font-size: 37px; }

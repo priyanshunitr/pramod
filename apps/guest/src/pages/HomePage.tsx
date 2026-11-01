@@ -1,7 +1,6 @@
 import { ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
 import { Link } from 'react-router';
 import { featuredRooms, formatMoney, hotel } from '../config/hotel';
-import { StaySearch } from '../components/StaySearch';
 import { Reveal } from '../components/Reveal';
 import { ArchitecturalHero } from '../components/ArchitecturalHero';
 import { InteriorSection } from '../components/InteriorSection';
@@ -13,11 +12,6 @@ export function HomePage() {
 
   return <div className="hotel-experience">
     <ArchitecturalHero />
-    <section className="arrival-search container" id="find-a-stay" aria-label="Find your stay">
-      <div className="search-intro"><span className="eyebrow">A FEW DAYS, ALL YOURS.</span><p>Your next pause starts here.</p></div>
-      <StaySearch />
-      <p className="search-note">Choose your dates to check room availability.</p>
-    </section>
     <InteriorSection />
     <section className="room-collection" id="rooms" data-header-tone="light" aria-labelledby="collection-title">
       <div className="container">
