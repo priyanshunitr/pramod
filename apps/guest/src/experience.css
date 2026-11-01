@@ -20,7 +20,6 @@ em { font-style: normal; }
 .site-header { position: sticky; top: 0; z-index: 30; background: transparent; color: var(--ink); }
 .site-header.over-hero { position: fixed; inset: 0 0 auto; }
 .site-header.light-header { color: #fff; }
-.light-header .brand, .light-header .signin-link, .light-header .menu-toggle { text-shadow: 0 1px 10px #09221e90; }
 .header-inner { width: calc(100% - 80px); max-width: none; height: 91px; gap: 28px; }
 .brand strong { font-family: 'DM Sans', Arial, sans-serif; font-size: 29px; font-weight: 650; letter-spacing: -1.5px; }
 .desktop-nav { position: absolute; left: 50%; transform: translateX(-50%); gap: 3px; padding: 5px; border-radius: 99px; color: #17382f; background: #ffffffc9; border: 1px solid #ffffff32; backdrop-filter: blur(10px); }
