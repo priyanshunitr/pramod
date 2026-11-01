@@ -79,12 +79,11 @@ em { font-style: normal; }
 .round-link { display: inline-flex; align-items: center; gap: 30px; font-size: 12px; }
 .round-link > span { width: 42px; height: 42px; border: 1px solid #aab3a3; border-radius: 50%; display: grid; place-items: center; }
 .room-fan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 34px; min-width: 0; padding: 12px; }
-.fan-card { position: relative; width: 100%; max-width: 250px; min-width: 0; justify-self: center; padding: 8px; background: #fff; border-radius: 11px; box-shadow: 0 10px 45px #192a1720; transition: transform .7s var(--ease-out), box-shadow .4s; transform: rotate(var(--tilt)); }
+.fan-card { position: relative; width: 100%; max-width: 250px; min-width: 0; justify-self: center; padding: 8px; background: #fff; border-radius: 11px; transition: transform .7s var(--ease-out); transform: rotate(var(--tilt)); }
 .fan-card > img { width: 100%; height: auto; aspect-ratio: 1.43; border-radius: 6px; }
 .fan-card-0 { --tilt: -3deg; }
 .fan-card-1 { --tilt: 3deg; }
 .fan-card-2 { --tilt: -2deg; grid-column: 1 / -1; width: calc((100% - 34px) / 2); }
-.fan-card:hover, .fan-card:focus-visible { transform: rotate(0deg) translateY(-6px); box-shadow: 0 20px 65px #192a1735; }
 .fan-card-caption { padding: 16px 9px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .fan-card-caption strong { font-size: 17px; letter-spacing: -.4px; font-weight: 550; }
 .fan-card-caption small { display: block; margin-top: 5px; font-size: 9px; color: #7b8076; }
