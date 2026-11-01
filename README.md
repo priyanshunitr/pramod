@@ -44,14 +44,16 @@ The optional demo seed creates one placeholder hotel, three room types, and thre
 | `/account` | Customer registration, sign-in/out, short-lived JWT authentication, own reservations and cancellation |
 | `/staff` | Links to the separate reception and owner workspaces |
 
-The table above describes the guest app. Reception has `/` for reservations and `/readiness` for housekeeping. It supports account registration/sign-in, invitation acceptance, and receptionist access requests when the account does not yet have hotel access.
+The table above describes the guest app. Reception has `/` for the daily front desk, `/reservations` for searchable stays and check-in/check-out, `/availability` for date-based room availability and rates, and `/readiness` for housekeeping. It supports account registration/sign-in, invitation acceptance, and receptionist access requests when the account does not yet have hotel access. Reception lists use the API's latest 100 reservations; a notice appears when that limit is reached.
+
+Both staff apps share Pramod's warm neutral palette, sans-serif typography, rounded controls, responsive navigation, and framed surfaces. At `/preview/`, each app offers an explicitly labeled sample workspace with fictional reservations and rooms. Preview actions run only in memory, make no API requests, reset on reload, and never grant real hotel access. Normal routes retain JWT authentication and server-checked staff memberships. See [staff workspace flows](docs/staff-workspaces.md).
 
 The owner app requires an active owner membership and provides:
 
 | Owner route | Behavior |
 | --- | --- |
 | `/` | Live occupancy, available rooms, booking value, reservation totals, today's arrivals/departures, nightly outlook, and room readiness |
-| `/availability` | Date and room-type filters, room search/status filter, per-room occupancy/housekeeping and reservation details |
+| `/availability` | Date and room-type filters, a nightly room calendar, room search/status filter, per-room occupancy/housekeeping and reservation details |
 | `/reservations` | Search, status filters, dashboard drilldowns, and cancellation/check-in/check-out |
 | `/readiness` | Update housekeeping using the same API as reception |
 | `/team` | Approve requests, invite receptionists/owners, and remove access |

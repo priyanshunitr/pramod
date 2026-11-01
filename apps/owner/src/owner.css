@@ -6,3 +6,29 @@
 @media(max-width:1050px) { .metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)) } .report-filters { flex-wrap:wrap } .report-filter-title { display:none } .report-filters .type-filter { margin-left:0 } .report-filters .button { margin-left:auto } .overview-middle { grid-template-columns:1fr } .chart-legend { flex-direction:row } .today-strip { grid-template-columns:1fr 1fr;row-gap:18px } .today-strip a:nth-child(3) { border:0;padding-left:0 } .report-window { align-items:flex-start } .report-window>span { text-align:right;line-height:1.5 } .reservation-filterbar { flex-wrap:wrap } .report-filters input { max-width:130px } }
 @media(max-width:520px) { .report-refresh { padding:10px;font-size:0;gap:0;min-height:35px } .portal-page-heading .eyebrow { font-size:8px } .portal-page-heading h1 { font-size:37px } .portal-page-heading p:not(.eyebrow) { font-size:11px } .metrics-grid { gap:10px } .metric-label { font-size:10px } .metric-label svg { width:15px } .metric-value { font-size:38px;margin-block:13px } .metric-note { font-size:8px } .metric-card { padding:15px } .money-values { font-size:29px } .today-strip { font-size:9px;gap:18px 10px } .today-mark { display:none } .today-strip>div strong { font-size:10px } .report-filters { gap:12px;padding:15px } .report-filters .type-filter { border:0;padding:0;width:calc(100% - 95px) } .report-window { flex-direction:column;gap:12px } .period-shortcuts { gap:0 } .period-shortcuts button { font-size:10px } .report-window>span { text-align:left;padding-left:10px } .panel-heading { padding:20px 18px 0 } .panel-heading h2 { font-size:26px } .panel-subtitle { margin-inline:18px } .panel-heading .text-link { font-size:10px } .inventory-filters { flex-direction:column;align-items:stretch;margin-inline:18px } .chart-legend { font-size:8px;gap:7px } .chart-scroll { margin-inline:18px } .table-footer { align-items:flex-start;font-size:8px;padding-inline:18px } .table-footer>span { max-width:50% } .availability-summary { gap:15px } .reservation-filterbar { flex-direction:column } .reservation-filterbar .status-select { flex-wrap:wrap } .report-loading>div { grid-template-columns:1fr 1fr } .portal-footer { font-size:8px } }
 .table-scroll { position: relative; }
+.room-calendar { margin-bottom: 25px; }
+.calendar-scroll { overflow: auto; max-height: 600px; margin-top: 24px; }
+.calendar-table { width: 100%; min-width: 650px; border-collapse: separate; border-spacing: 0; text-align: left; }
+.calendar-table thead th { position: sticky; top: 0; z-index: 2; background: #f5f7ee; border-block: 1px solid var(--line); font-size: 10px; font-weight: 400; padding: 14px 12px; text-align: center; min-width: 86px; }
+.calendar-table th:first-child { position: sticky; left: 0; background: #fffefb; min-width: 160px; padding: 15px 22px; z-index: 1; }
+.calendar-table thead th:first-child { z-index: 3; background: #f5f7ee; text-align: left; }
+.calendar-table thead span { display: block; color: #929c83; font-size: 9px; margin-bottom: 7px; }
+.calendar-table thead strong { font-weight: 500; }
+.calendar-table tbody th { border-bottom: 1px solid #eaeee1; }
+.calendar-table tbody th strong { font-size: 12px; font-weight: 550; }
+.calendar-table tbody small { display: block; color: #929c83; font-size: 9px; font-weight: 400; margin-top: 6px; }
+.calendar-table td { border-bottom: 1px solid #eaeee1; padding: 7px 5px; }
+.calendar-night { display: grid; place-items: center; min-height: 35px; border-radius: 4px; font-size: 9px; }
+.calendar-night.available { background: #f0f4e9; color: #8da079; }
+.calendar-night.reserved { background: #d9e3c5; color: #527035; }
+.calendar-night.out-of-service { background: #f1e9e2; color: #a28370; }
+.calendar-night:focus-visible { outline-offset: -2px; }
+.calendar-footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px 24px; font-size: 9px; color: #909a81; }
+.calendar-legend { display: flex; gap: 18px; }
+.calendar-legend > span { display: flex; align-items: center; gap: 6px; }
+.calendar-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.calendar-legend .available { background: #f0f4e9; border: 1px solid #dfe5d5; }
+.calendar-legend .reserved { background: #d9e3c5; }
+.calendar-legend .out-of-service { background: #f1e9e2; }
+.owner-reservations { margin-top: 22px; }
+@media (max-width:520px) { .calendar-table th:first-child { min-width: 125px; padding-inline: 16px; } .calendar-footer { padding-inline: 18px; } .calendar-legend { gap: 10px; } }
