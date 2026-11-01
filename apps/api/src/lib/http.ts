@@ -19,6 +19,7 @@ export const email = z.email('Enter a valid email address.').max(254).transform(
 const configuredOrigins = [env.FRONTEND_ORIGIN,
   env.RECEPTION_ORIGIN ?? (env.NODE_ENV !== 'production' ? 'http://localhost:5174' : undefined),
   env.OWNER_ORIGIN ?? (env.NODE_ENV !== 'production' ? 'http://localhost:5175' : undefined),
+  env.NODE_ENV === 'development' ? env.DEV_TUNNEL_ORIGIN : undefined,
 ].filter((origin): origin is string => Boolean(origin));
 export const allowedOrigins = new Set(configuredOrigins.map(origin => new URL(origin).origin));
 if (env.NODE_ENV !== 'production') {

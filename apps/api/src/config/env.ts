@@ -10,6 +10,7 @@ const result = z.object({
   FRONTEND_ORIGIN: z.url().default('http://localhost:5173'),
   RECEPTION_ORIGIN: z.url().optional(),
   OWNER_ORIGIN: z.url().optional(),
+  DEV_TUNNEL_ORIGIN: z.url({ protocol: /^https?$/ }).optional(),
   JWT_SECRET: z.string().regex(/^[a-f0-9]{64}$/i, 'Use a random 32-byte key encoded as 64 hexadecimal characters.'),
   JWT_ISSUER: z.string().min(1).default('pramod-api'),
   JWT_AUDIENCE: z.string().min(1).default('pramod-web'),

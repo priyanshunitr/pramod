@@ -143,6 +143,7 @@ The root `.env` is server-side configuration. Never put database credentials in 
 | `API_PORT` | Backend port and Vite proxy target; defaults to 4000 |
 | `FRONTEND_ORIGIN` | Exact guest origin allowed for API reads/writes; default localhost:5173 |
 | `RECEPTION_ORIGIN`, `OWNER_ORIGIN` | Exact additional trusted origins; default localhost:5174/5175 in development, no implicit production defaults |
+| `DEV_TUNNEL_ORIGIN` | Optional exact HTTP(S) tunnel origin allowed alongside local origins, only when `NODE_ENV=development` |
 | `VITE_GUEST_URL`, `VITE_RECEPTION_URL`, `VITE_OWNER_URL` | Public cross-app links, configured at build time; local ports are the development fallback |
 | `VITE_PROPERTY_SLUG` | Property catalog used by all three apps; defaults to `demo-hotel` |
 | `NODE_ENV` | Runtime environment; demo seeding is disabled in production |
@@ -150,6 +151,8 @@ The root `.env` is server-side configuration. Never put database credentials in 
 If using an existing database, set `DATABASE_URL` and skip `db:up`. If changing Docker database credentials or the port, update `DATABASE_URL` to match. PostgreSQL initialization variables apply only when creating a fresh volume; changing them does not change credentials in an existing database.
 
 The application and Docker database bind to loopback for local development. Data persists in the Compose volume across restarts. `db:down` does not erase it. The local demo credentials are not suitable for a deployed environment.
+
+For a guest preview through ngrok, run `ngrok http http://127.0.0.1:<guest-port>`. Restart the API with `DEV_TUNNEL_ORIGIN` set to the issued HTTPS URL, and restart the guest frontend with `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS` set to that URL's hostname only. Keep the normal local origins configured too. These settings allow only the selected tunnel; do not disable Vite's host check or rewrite browser Origin headers. Stop ngrok when the preview is finished.
 
 ## Database foundation
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "globalDependencies": [".env", ".env.example"],
-  "globalEnv": ["NODE_ENV", "API_PORT", "FRONTEND_ORIGIN", "RECEPTION_ORIGIN", "OWNER_ORIGIN", "JWT_ISSUER", "JWT_AUDIENCE", "JWT_TTL_SECONDS", "VITE_*"],
+  "globalEnv": ["NODE_ENV", "API_PORT", "FRONTEND_ORIGIN", "RECEPTION_ORIGIN", "OWNER_ORIGIN", "DEV_TUNNEL_ORIGIN", "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS", "JWT_ISSUER", "JWT_AUDIENCE", "JWT_TTL_SECONDS", "VITE_*"],
   "globalPassThroughEnv": ["DATABASE_URL", "JWT_SECRET"],
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
