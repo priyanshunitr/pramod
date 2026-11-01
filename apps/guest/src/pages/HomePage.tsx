@@ -1,15 +1,52 @@
+import { useLayoutEffect, useRef } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router';
-import { featuredRooms, formatMoney } from '../config/hotel';
+import { featuredRooms, formatMoney, hotel } from '../config/hotel';
 import { Reveal } from '../components/Reveal';
 import { ArchitecturalHero } from '../components/ArchitecturalHero';
 import { InteriorSection } from '../components/InteriorSection';
-import { LifestyleSection } from '../components/LifestyleSection';
 
 const rateLabel = (minor: number | null, currency?: string) => minor === null ? 'Rate on request' : `From ${formatMoney(minor / 100, currency)} / night`;
 
 export function HomePage() {
   const rooms = featuredRooms;
+  const lifeSectionRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const section = lifeSectionRef.current;
+    if (!section) return;
+    const photo = section.querySelector<HTMLImageElement>('.life-photo')!;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+    let disposed = false;
+
+    const update = () => {
+      frame = 0;
+      const bounds = section.getBoundingClientRect();
+      // Pull back from 220% on entry to the full view while half the section is still visible.
+      const progress = Math.max(0, Math.min(1,
+        (window.innerHeight - bounds.top) / (window.innerHeight + bounds.height * .5)));
+      photo.style.setProperty('--life-photo-scale', String(reducedMotion.matches ? 1 : 2.2 - progress * 1.2));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const resize = new ResizeObserver(schedule);
+    resize.observe(section);
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    reducedMotion.addEventListener('change', schedule);
+    void document.fonts.ready.then(() => { if (!disposed) schedule(); });
+    update();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      reducedMotion.removeEventListener('change', schedule);
+    };
+  }, []);
 
   return <div className="hotel-experience">
     <ArchitecturalHero />
@@ -28,7 +65,23 @@ export function HomePage() {
         <div className="collection-bottom"><p>A little everyday luxury, at your own pace.</p><Link to="/rooms" className="text-link">See rooms & availability <ArrowUpRight size={18} /></Link></div>
       </div>
     </section>
-    <LifestyleSection />
+    <section className="life-at-pramod" ref={lifeSectionRef} data-header-tone="light" aria-labelledby="life-title">
+      <img className="life-photo" src={hotel.lifeImage} alt="Illustrative nighttime villa with a turquoise infinity pool and tropical palms" loading="lazy" width="1672" height="941" />
+      <div className="life-shade" />
+      <div className="life-content container">
+        <div className="section-kicker"><span>/ Life at Pramod</span><span>Little comforts. Lovely moments.</span></div>
+        <Reveal className="life-composition">
+          <div className="life-heading"><h2 id="life-title">Less rush.<br />More living.</h2><Link to="/gallery" className="button glass">Take a look around <ArrowUpRight size={18} /></Link></div>
+          {[
+            { image: '/images/classic-room.jpg', alt: 'Illustrative guest room with a comfortable bed', title: 'Slow mornings', copy: 'One more cup. No hurry.' },
+            { image: '/images/hotel-pool.jpg', alt: 'Illustrative swimming pool framed by palm trees', title: 'Poolside pauses', copy: 'Make time for doing nothing.' },
+            { image: '/images/family-suite.jpg', alt: 'Illustrative suite interior with a spacious bed', title: 'Stay connected', copy: 'As much, or as little, as you like.' },
+            { image: '/images/deluxe-room.jpg', alt: 'Illustrative warm, inviting room interior', title: 'A warm welcome', copy: 'The little things, taken care of.' },
+          ].map(({ image, alt, title, copy }, index) => <figure key={title} className={`comfort-note comfort-note-${index + 1}`}><img src={image} alt={alt} width="480" height="300" loading="lazy" /><figcaption><h3>{title}</h3><p>{copy}</p></figcaption></figure>)}
+        </Reveal>
+        <p className="experience-note">A glimpse of the experience · Illustrative amenities and photography</p>
+      </div>
+    </section>
     <section className="next-stay container"><Reveal><span className="eyebrow">SOMEWHERE YOU’LL WANT TO STAY.</span><Link to="/rooms" className="next-stay-link"><h2>See you soon?</h2><span><ArrowUpRight strokeWidth={1.2} /></span></Link><p>Pick your dates. We’ll help you find your place.</p></Reveal></section>
   </div>;
 }
