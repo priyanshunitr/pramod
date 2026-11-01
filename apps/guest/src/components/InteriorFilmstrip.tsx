@@ -15,7 +15,9 @@ export function InteriorFilmstrip() {
         <ul className="filmstrip-track" data-start-frame={startFrame} data-direction={direction} aria-label={`Interior roll ${roll + 1}`}>
           {rooms.map((room, index) => <li className="filmstrip-frame" key={`${room.slug}-${index}`} aria-hidden={index >= featuredRooms.length ? true : undefined}>
             <figure>
-              <img src={room.image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
+              <div className="filmstrip-photo">
+                <img src={room.image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
+              </div>
               <figcaption><span>{room.name}</span><span aria-hidden="true">{String(index + 1).padStart(2, '0')}{roll === 0 ? 'A' : 'B'}</span></figcaption>
             </figure>
           </li>)}

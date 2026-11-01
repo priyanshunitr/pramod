@@ -15,6 +15,8 @@ export function InteriorSection() {
     const staticLayout = window.matchMedia('(prefers-reduced-motion: reduce)');
     let starts: number[] = [];
     let travel: number[] = [];
+    let viewportHeights: number[] = [];
+    let photos: { element: HTMLElement; center: number; height: number }[][] = [];
     let distance = 0;
     let frame = 0;
     let disposed = false;
@@ -23,7 +25,15 @@ export function InteriorSection() {
       frame = 0;
       const progress = distance > 0 ? Math.min(1, Math.max(0, -section.getBoundingClientRect().top / distance)) : 0;
       tracks.forEach((track, index) => {
-        track.style.setProperty('--film-offset', `${-((starts[index] ?? 0) + progress * (travel[index] ?? 0))}px`);
+        const offset = (starts[index] ?? 0) + progress * (travel[index] ?? 0);
+        track.style.setProperty('--film-offset', `${-offset}px`);
+        const viewportHeight = viewportHeights[index] ?? 0;
+        photos[index]?.forEach(photo => {
+          // Counter the frame's travel so its photo drifts more slowly inside it.
+          const position = staticLayout.matches ? 0 : Math.max(-1, Math.min(1,
+            (viewportHeight / 2 - (photo.center - offset)) / ((viewportHeight + photo.height) / 2)));
+          photo.element.style.setProperty('--film-photo-offset', `${position * 12}%`);
+        });
       });
     };
     const schedule = () => {
@@ -32,8 +42,17 @@ export function InteriorSection() {
     const measure = () => {
       const pinned = !staticLayout.matches;
       section.dataset.scrollMode = pinned ? 'pinned' : 'static';
-      const availableTravel = tracks.map(track => pinned
-        ? Math.max(0, track.getBoundingClientRect().height - track.parentElement!.getBoundingClientRect().height)
+      viewportHeights = tracks.map(track => track.parentElement!.getBoundingClientRect().height);
+      // Cache frame geometry on resize; scroll updates only write transforms.
+      photos = tracks.map(track => {
+        const trackTop = track.getBoundingClientRect().top;
+        return [...track.querySelectorAll<HTMLElement>('.filmstrip-photo')].map(element => {
+          const bounds = element.getBoundingClientRect();
+          return { element, center: bounds.top - trackTop + bounds.height / 2, height: bounds.height };
+        });
+      });
+      const availableTravel = tracks.map((track, index) => pinned
+        ? Math.max(0, track.getBoundingClientRect().height - (viewportHeights[index] ?? 0))
         : 0);
       const paths = tracks.map((track, index) => {
         const available = availableTravel[index] ?? 0;
