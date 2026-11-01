@@ -1,0 +1,20 @@
+.availability-form { display: flex; align-items: center; gap: 24px; border: 1px solid var(--line); border-radius: 9px; background: #fffefb; padding: 21px; }
+.availability-form label { flex: 1; display: grid; gap: 12px; min-width: 0; }
+.availability-form label > span { display: flex; align-items: center; gap: 8px; color: #76816b; font-size: 10px; }
+.availability-form input, .availability-form select { width: 100%; min-width: 0; padding: 4px 0; border: 0; background: transparent; font-size: 13px; color: var(--ink); }
+.availability-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 19px; }
+.availability-card { min-width: 0; border: 1px solid var(--line); background: #fffefb; border-radius: 8px; overflow: hidden; padding: 8px; }
+.availability-card-top { position: relative; height: 180px; display: flex; align-items: center; justify-content: center; background: #e5eadb; border-radius: 3px; overflow: hidden; color: #697a56; }
+.availability-card-top > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.availability-card-top > span:first-child { position: absolute; z-index: 1; top: 13px; left: 14px; color: white; font-size: 11px; }
+.availability-card-top > .status-badge { position: absolute; bottom: 12px; left: 12px; }
+.availability-card-body { padding: 21px 14px 14px; }
+.availability-card h2 { font-size: 23px; }
+.availability-card-body > p { color: var(--muted); font-size: 11px; margin-top: 7px; }
+.availability-rate { margin-top: 25px; display: flex; align-items: baseline; gap: 6px; }
+.availability-rate strong { font-size: 26px; font-weight: 500; letter-spacing: -.05em; }
+.availability-rate > span { font-size: 10px; color: var(--muted); }
+.availability-total { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 17px; display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: #7d886f; }
+.availability-total strong { color: #435337; font-weight: 500; }
+@media (max-width:1100px) { .availability-form { flex-wrap: wrap; } .availability-form .button { margin-left: auto; } .availability-cards { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width:600px) { .availability-form { gap: 23px 15px; } .availability-form label { flex-basis: calc(50% - 15px); } .availability-form .button { width: 100%; } .availability-cards { grid-template-columns: 1fr; } .availability-card-top { height: 210px; } }

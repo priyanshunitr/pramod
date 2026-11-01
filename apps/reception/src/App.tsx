@@ -1,6 +1,8 @@
 import { Link, Route, Routes } from 'react-router';
 import { api, useAuth, type PropertyCatalog } from '@hotel/api-client';
-import { BookingList, HousekeepingPanel, StaffGate, WorkspaceShell, WorkspaceProvider, WorkspacePreview } from '@hotel/ui';
+import { HousekeepingPanel, StaffGate, WorkspaceShell, WorkspaceProvider, WorkspacePreview } from '@hotel/ui';
+import { ReceptionPage } from './ReceptionPage';
+import { AvailabilityPage } from './AvailabilityPage';
 
 export default function App({ preview = false }: { preview?: boolean }) {
   return preview ? <WorkspacePreview>{property => <ReceptionRoutes property={property} />}</WorkspacePreview> : <LiveWorkspace />;
@@ -11,7 +13,9 @@ function LiveWorkspace() {
 }
 function ReceptionRoutes({ property }: { property: PropertyCatalog }) {
   return <WorkspaceShell><Routes>
-    <Route index element={<><div className="portal-page-heading"><div><p className="eyebrow">THE RECEPTION DESK</p><h1>Every guest, <em>looked after.</em></h1><p>Manage arrivals, departures, and reservations for Pramod.</p></div></div><BookingList propertyId={property.id} /></>} />
+    <Route index element={<ReceptionPage dashboard />} />
+    <Route path="reservations" element={<ReceptionPage key="reservations" />} />
+    <Route path="availability" element={<AvailabilityPage />} />
     <Route path="readiness" element={<HousekeepingPanel propertyId={property.id} />} />
     <Route path="*" element={<div className="empty-state"><h1>Page not found.</h1><Link to="/" className="text-link">Back to reservations</Link></div>} />
   </Routes></WorkspaceShell>;
