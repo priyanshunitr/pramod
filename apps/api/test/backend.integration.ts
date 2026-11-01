@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { readdir, readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import { decodeJwt, SignJWT } from 'jose';
 
 dotenv.config({ path: new URL('../../../.env', import.meta.url), quiet: true });
 if (process.env.NODE_ENV === 'production') throw new Error('Integration tests must not run against a production configuration.');
@@ -17,10 +18,14 @@ const isolatedUrl = new URL(process.env.DATABASE_URL);
 isolatedUrl.searchParams.set('options', `-c search_path=${schema},public`);
 process.env.DATABASE_URL = isolatedUrl.toString();
 process.env.NODE_ENV = 'test';
+// Integration tokens cannot be used against the running development server.
+process.env.JWT_SECRET = randomBytes(32).toString('hex');
+process.env.JWT_TTL_SECONDS = '900';
 
 const { pool } = await import('../src/db/pool.js');
 const { createApp } = await import('../src/app.js');
 const { digest } = await import('../src/modules/auth/security.js');
+const { env } = await import('../src/config/env.js');
 const origin = new URL(process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173').origin;
 const password = 'A long local test passphrase!';
 type ResponseData = Record<string, any>;
@@ -69,7 +74,7 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
   const bookingPath = `/properties/${hotel}/bookings`;
   const staffPath = `/properties/${hotel}/staff`;
 
-  await t.test('registration never grants a role; cookies and stored credentials are protected', async () => {
+  await t.test('registration never grants a role; JWT cookies and stored credentials are protected', async () => {
     const denied = await call('/auth/register', { fullName: 'Elevated', email: 'elevated@example.test', password, role: 'owner' });
     assert.equal(denied.status, 400);
     assert.equal((await call('/auth/register', { fullName: 'Short', email: 'short@example.test', password: 'short' })).status, 400);
@@ -78,11 +83,21 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     const stored = await pool.query('SELECT password_hash FROM users WHERE id = $1', [customer.id]);
     assert.ok(stored.rows[0].password_hash.startsWith('scrypt-v1:'));
     assert.notEqual(stored.rows[0].password_hash, password);
-    const sessions = await pool.query('SELECT token_hash FROM sessions WHERE user_id = $1', [customer.id]);
-    assert.equal(sessions.rows[0].token_hash, digest(customer.cookie.split('=')[1]!));
+    assert.equal(info.payload.data.user.id, customer.id);
+    assert.ok(Date.parse(info.payload.data.expiresAt) > Date.now());
+    const claims = decodeJwt(customer.cookie.split('=')[1]!);
+    assert.equal(claims.sub, customer.id);
+    assert.equal(claims.exp! - claims.iat!, 900);
+    assert.equal(claims.role, undefined);
+    assert.equal(claims.password_hash, undefined);
+    assert.equal((await pool.query("SELECT 1 FROM pg_tables WHERE schemaname = $1 AND tablename = 'sessions'", [schema])).rowCount, 0);
     const login = await call('/auth/login', { email: customer.email, password });
     assert.match(login.headers.get('set-cookie')!, /HttpOnly/);
     assert.match(login.headers.get('set-cookie')!, /SameSite=Lax/);
+    assert.match(login.cookie, /^pramod_access=/);
+    assert.notEqual(login.cookie, customer.cookie);
+    assert.equal((await call('/bookings', undefined, login.cookie)).status, 200);
+    assert.equal((await call('/bookings', undefined, customer.cookie)).status, 200, 'a new login does not revoke an earlier JWT');
     assert.equal(login.headers.get('cache-control'), 'no-store');
     assert.equal((await call('/auth/login', { email: customer.email, password: 'incorrect password' })).status, 401);
     assert.equal((await call('/auth/register', { fullName: 'Duplicate', email: customer.email.toUpperCase(), password })).status, 409);
@@ -258,16 +273,29 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
       assert.equal((await call(`/properties/${reportHotel}/staff/rooms/${rooms[0]!.id}/housekeeping`, { status: 'clean' }, owner.cookie, { origin: trustedOrigin })).status, 200);
     }
     await pool.query('UPDATE staff_memberships SET active = false WHERE property_id = $1 AND user_id = $2', [reportHotel, owner.id]);
-    assert.equal((await call(path, undefined, owner.cookie)).status, 403, 'revoked owner sessions cannot read reports');
+    assert.equal((await call(path, undefined, owner.cookie)).status, 403, 'a valid JWT cannot bypass revoked owner access');
   });
 
-  await t.test('expired sessions and signed-out sessions cannot be reused; rate limits are shared', async () => {
+  await t.test('logout clears cookies; copied JWTs remain valid until expiry; invalid tokens are rejected', async () => {
     const login = await call('/auth/login', { email: customer.email, password });
     assert.equal(login.status, 200);
-    await call('/auth/logout', {}, login.cookie);
-    assert.equal((await call('/bookings', undefined, login.cookie)).status, 401);
-    await pool.query("UPDATE sessions SET expires_at = now() - interval '1 second' WHERE user_id = $1", [outsider.id]);
-    assert.equal((await call('/bookings', undefined, outsider.cookie)).status, 401);
+    const logout = await call('/auth/logout', {}, login.cookie);
+    assert.equal(logout.status, 200);
+    assert.match(logout.headers.get('set-cookie')!, /pramod_access=; Path=\/; Expires=Thu, 01 Jan 1970/);
+    assert.equal((await call('/bookings', undefined, logout.cookie)).status, 401);
+    assert.equal((await call('/bookings', undefined, login.cookie)).status, 200, 'stateless logout cannot revoke a copied token');
+    const claims = decodeJwt(login.cookie.split('=')[1]!);
+    const expired = await new SignJWT({ ...claims, iat: Math.floor(Date.now() / 1000) - 901, exp: Math.floor(Date.now() / 1000) - 1 })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' }).sign(Buffer.from(env.JWT_SECRET, 'hex'));
+    const pieces = login.cookie.split('=')[1]!.split('.');
+    pieces[1] = Buffer.from(JSON.stringify({ ...claims, sub: owner.id, role: 'owner' })).toString('base64url');
+    for (const cookie of [`pramod_access=${expired}`, `pramod_access=${pieces.join('.')}`, 'pramod_access=invalid', `pramod_session=${'a'.repeat(64)}`]) {
+      assert.equal((await call('/bookings', undefined, cookie)).status, 401);
+      assert.deepEqual((await call('/auth/me', undefined, cookie)).payload.data, { user: null, memberships: [], expiresAt: null });
+    }
+  });
+
+  await t.test('authentication rate limits are still shared', async () => {
     await pool.query("INSERT INTO rate_limits(key, attempts, resets_at) VALUES ($1, 10, now() + interval '1 hour') ON CONFLICT (key) DO UPDATE SET attempts = 10, resets_at = EXCLUDED.resets_at", [digest(`login-email:${customer.email}`)]);
     const limited = await call('/auth/login', { email: customer.email, password });
     assert.equal(limited.status, 429); assert.ok(limited.headers.get('retry-after'));

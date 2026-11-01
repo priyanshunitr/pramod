@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { parse, propertyParam, uuid } from '../../lib/http.js';
-import { account, requireUser } from '../auth/session.js';
+import { account, requireUser } from '../auth/auth.js';
 import { dateValue } from '../bookings/stay.js';
 import { ownerDashboard } from './owner.repository.js';
 

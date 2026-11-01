@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { pool } from '../../db/pool.js';
 import { email, HttpError, parse } from '../../lib/http.js';
-import { createSession, currentUser, endSession, memberships } from './session.js';
+import { authenticate, signIn, signOut, memberships } from './auth.js';
+import type { Account } from './jwt.js';
 import { hashPassword, rateLimit, verifyPassword } from './security.js';
 
 const credentials = z.object({ email, password: z.string().min(1).max(128) }).strict();
@@ -13,8 +14,11 @@ const registration = credentials.extend({
 
 export const authRouter = Router();
 authRouter.get('/me', async (request, response) => {
-  const user = await currentUser(request);
-  response.json({ data: { user, memberships: user ? await memberships(user.id) : [] } });
+  const identity = await authenticate(request);
+  response.json({ data: {
+    user: identity?.user ?? null, expiresAt: identity?.expiresAt ?? null,
+    memberships: identity ? await memberships(identity.user.id) : [],
+  } });
 });
 
 authRouter.post('/register', async (request, response) => {
@@ -26,22 +30,23 @@ authRouter.post('/register', async (request, response) => {
     ON CONFLICT DO NOTHING RETURNING id, email, full_name AS "fullName"`, [data.email, data.fullName, passwordHash]);
   const user = result.rows[0];
   if (!user) throw new HttpError(409, 'Unable to create an account with those details. Try signing in.');
-  await createSession(user.id, request, response);
-  response.status(201).json({ data: { user, memberships: [] } });
+  const expiresAt = await signIn(user, response);
+  response.status(201).json({ data: { user, memberships: [], expiresAt } });
 });
 
 authRouter.post('/login', async (request, response) => {
   const data = parse(credentials, request.body);
   await rateLimit(`login-ip:${request.ip}`, 30, 900);
   await rateLimit(`login-email:${data.email}`, 10, 900);
-  const result = await pool.query<{ id: string; password_hash: string | null }>('SELECT id, password_hash FROM users WHERE lower(email) = $1', [data.email]);
+  const result = await pool.query<Account & { password_hash: string | null }>(
+    'SELECT id, email, full_name AS "fullName", password_hash FROM users WHERE lower(email) = $1', [data.email]);
   const user = result.rows[0];
   if (!await verifyPassword(data.password, user?.password_hash ?? null) || !user) throw new HttpError(401, 'Email or password is incorrect.');
-  await createSession(user.id, request, response);
-  response.json({ data: { signedIn: true } });
+  const expiresAt = await signIn(user, response);
+  response.json({ data: { signedIn: true, expiresAt } });
 });
 
-authRouter.post('/logout', async (request, response) => {
-  await endSession(request, response);
+authRouter.post('/logout', (_request, response) => {
+  signOut(response);
   response.json({ data: { signedIn: false } });
 });

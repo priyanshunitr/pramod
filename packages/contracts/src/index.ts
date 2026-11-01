@@ -6,6 +6,7 @@ export interface PropertyCatalog {
 export interface Session {
   user: { id: string; email: string; fullName: string } | null;
   memberships: { propertyId: string; propertyName: string; slug: string; role: 'owner' | 'receptionist' }[];
+  expiresAt: string | null;
 }
 
 export interface Booking {

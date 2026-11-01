@@ -1,11 +1,12 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "globalDependencies": [".env", ".env.example"],
-  "globalEnv": ["NODE_ENV", "API_PORT", "FRONTEND_ORIGIN", "RECEPTION_ORIGIN", "OWNER_ORIGIN", "VITE_*"],
+  "globalEnv": ["NODE_ENV", "API_PORT", "FRONTEND_ORIGIN", "RECEPTION_ORIGIN", "OWNER_ORIGIN", "JWT_ISSUER", "JWT_AUDIENCE", "JWT_TTL_SECONDS", "VITE_*"],
+  "globalPassThroughEnv": ["DATABASE_URL", "JWT_SECRET"],
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "typecheck": { "dependsOn": ["^typecheck"] },
     "test": { "dependsOn": ["^typecheck"] },
-    "dev": { "cache": false, "persistent": true, "passThroughEnv": ["DATABASE_URL"] }
+    "dev": { "cache": false, "persistent": true }
   }
 }

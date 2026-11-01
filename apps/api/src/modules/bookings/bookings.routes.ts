@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { parse, propertyParam, uuid } from '../../lib/http.js';
-import { account, requireUser } from '../auth/session.js';
+import { account, requireUser } from '../auth/auth.js';
 import { rateLimit } from '../auth/security.js';
 import { availability, createBooking, listBookings, listHotelBookings, transitionBooking } from './bookings.repository.js';
 import { staySchema } from './stay.js';

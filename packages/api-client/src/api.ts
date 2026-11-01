@@ -1,5 +1,7 @@
 import type { PropertyCatalog } from '@hotel/contracts';
 
+export const AUTH_REQUIRED_EVENT = 'pramod:auth-required';
+
 export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
@@ -10,7 +12,12 @@ export async function api<T>(path: string, body?: unknown, signal?: AbortSignal)
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json() as { data?: T; error?: string };
-  if (!response.ok) throw new ApiError(payload.error ?? 'We could not complete this request.', response.status);
+  if (!response.ok) {
+    if (response.status === 401 && !path.startsWith('/auth/') && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
+    }
+    throw new ApiError(payload.error ?? 'We could not complete this request.', response.status);
+  }
   return payload.data as T;
 }
 

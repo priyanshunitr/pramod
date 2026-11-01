@@ -28,7 +28,7 @@ npm run dev
 - Database readiness: http://localhost:4000/api/ready
 - Demo catalog: http://localhost:4000/api/properties/demo-hotel
 
-`setup` creates the ignored root `.env` from `.env.example` without overwriting an existing file. The database starts in Docker, while all three React apps and the API run directly on your machine with automatic reload. Each frontend proxies `/api` to the same Express service. Use the same hostname (`127.0.0.1` or `localhost`) across all three local apps so their host-only session cookie is shared.
+`setup` creates the ignored root `.env` from `.env.example` and generates a random JWT signing secret if one is missing. It preserves existing settings and signing keys. The database starts in Docker, while all three React apps and the API run directly on your machine with automatic reload. Each frontend proxies `/api` to the same Express service. Use the same hostname (`127.0.0.1` or `localhost`) across all three local apps so their host-only authentication cookie is shared.
 
 The optional demo seed creates one placeholder hotel, three room types, and three rooms. It is safe to run again without duplicating or overwriting these records. No accounts or passwords are seeded. The frontend uses this catalog and the Pramod branding configured in `apps/guest/src/config/hotel.ts`. Without the seed, room sections show a retry message.
 
@@ -41,7 +41,7 @@ The optional demo seed creates one placeholder hotel, three room types, and thre
 | `/rooms/:roomId` | Room details, illustrative amenities, and stay review entry |
 | `/stay` | Live inventory and server quote, authenticated reservation confirmation, optional local stay plan |
 | `/gallery` | Photo categories and keyboard-accessible image viewer |
-| `/account` | Customer registration, sign-in/out, persistent sessions, own reservations and cancellation |
+| `/account` | Customer registration, sign-in/out, short-lived JWT authentication, own reservations and cancellation |
 | `/staff` | Links to the separate reception and owner workspaces |
 
 The table above describes the guest app. Reception has `/` for reservations and `/readiness` for housekeeping. It supports account registration/sign-in, invitation acceptance, and receptionist access requests when the account does not yet have hotel access.
@@ -62,7 +62,7 @@ The customer experience is public. Account creation creates a customer account f
 
 Search checks PostgreSQL inventory for the requested dates. Reservation confirmation recalculates the price and allocates a physical room in a transaction. The demo rates are stored in `room_types.nightly_rate_minor`, in paise for INR. The booking stores its agreed rate, currency, and room total; a changed price requires the customer to refresh and review it. No taxes, payment processing, or financial settlement is implemented.
 
-Saved stay plans remain browser-local and do not hold inventory. Confirmed reservations are stored in PostgreSQL and appear under the customer's account. The frontend sends a booking idempotency key and retains it in session storage until the request succeeds, so retrying an interrupted request returns the original reservation. Account credentials and session tokens are never stored in local storage.
+Saved stay plans remain browser-local and do not hold inventory. Confirmed reservations are stored in PostgreSQL and appear under the customer's account. The frontend sends a booking idempotency key and retains it in session storage until the request succeeds, so retrying an interrupted request returns the original reservation. Account credentials and JWTs are never stored in local storage.
 
 The layout includes responsive navigation, keyboard focus indicators, loading/error/empty states, and a gallery dialog with Escape/arrow-key support. The current photos and amenities are illustrative; replace them with the hotel's confirmed content before launch. Image sources and licensing are recorded in `apps/guest/public/images/credits.txt`.
 
@@ -89,7 +89,7 @@ apps/api/
     config/env.ts            Validated environment configuration
     db/                      Connection pool, migrations, seed runner
     modules/catalog/         Property and room-type queries
-    modules/auth/            Registration, password hashing, sessions, rate limits
+    modules/auth/            Registration, password hashing, JWT authentication, rate limits
     modules/staff/           Hotel permissions, requests, invitations, audit trail
     modules/bookings/        Availability, room allocation, pricing, stay transitions
     modules/owner/           Owner-only metrics and inventory reports
@@ -157,7 +157,7 @@ The initial migration creates `properties`, `users`, `staff_memberships`, `room_
 
 Owner and receptionist roles are property-specific staff memberships. Customers see and cancel only their own reservations. Owners approve receptionist requests, create email-bound invitations, and revoke access. Receptionists can view hotel reservations, check guests in/out, and update housekeeping status. Every protected operation checks the current database membership; the frontend role is never authoritative. The last active owner cannot be removed through the API.
 
-The account migration adds password hashes, hashed opaque sessions, shared rate limits, staff requests/invitations, audit events, bookings, physical room allocations, and a notification outbox. Composite foreign keys keep room types, rooms, and bookings within the same hotel. A PostgreSQL GiST exclusion constraint prevents overlapping active allocations even under concurrent requests. Stays use `[check_in, check_out)` date ranges in the property's timezone, so checkout-day arrivals are allowed. The API currently supports one room per reservation, up to six guests subject to room capacity, and one to thirty nights. Room types without configured rates cannot be reserved.
+The account migration adds password hashes, shared rate limits, staff requests/invitations, audit events, bookings, physical room allocations, and a notification outbox. Migration `004_stateless_auth.sql` removes the obsolete opaque-session table introduced by migration 002; existing accounts and hotel data remain intact. Composite foreign keys keep room types, rooms, and bookings within the same hotel. A PostgreSQL GiST exclusion constraint prevents overlapping active allocations even under concurrent requests. Stays use `[check_in, check_out)` date ranges in the property's timezone, so checkout-day arrivals are allowed. The API currently supports one room per reservation, up to six guests subject to room capacity, and one to thirty nights. Room types without configured rates cannot be reserved.
 
 Cancellation releases the allocation in the same transaction. Check-in requires an eligible date, a clean room in service, and no previous guest still checked in. Check-out marks the room dirty. Permanent out-of-service rooms are excluded from availability; scheduled maintenance blocks and room moves are future work.
 
@@ -173,11 +173,17 @@ Bootstrap refuses to run once an active owner exists. Invitations expire after s
 
 ## Authentication and deployment boundary
 
-Passwords use salted Node.js scrypt (`N=131072, r=8, p=1`) and must contain 15–128 characters at registration. Sessions use random 256-bit tokens, store only their SHA-256 hashes, expire after seven days, rotate on sign-in, and are revoked on sign-out. Cookies are HttpOnly and SameSite=Lax; production uses a Secure `__Host-` cookie. All API responses use `Cache-Control: no-store`. Authenticated writes require JSON and an exact allowed `Origin`, including login and registration. Rate counters are shared in PostgreSQL, so adding API instances does not bypass the limits.
+Passwords use salted Node.js scrypt (`N=131072, r=8, p=1`) and must contain 15–128 characters at registration. After password verification, the API issues an HS256 JWT using [jose](https://github.com/panva/jose). Each request verifies the signature, allowed algorithm, token type, issuer, audience, required identity claims, issue time, and expiry before trusting the user ID. Authentication does not read or write a session table or look up the user. Staff permissions still come from the current PostgreSQL membership on each protected operation; permissions are not embedded in JWTs.
+
+JWTs expire after 15 minutes by default (`JWT_TTL_SECONDS=900`, configurable from 60 to 3600 seconds). There are no refresh tokens, session records, or revocation lists. The shared frontend checks authentication at expiry, on focus, and after a protected request returns 401; users sign in again after expiry. Logout clears the browser cookie, but a copied JWT remains valid until its expiry. Signing in again does not invalidate earlier JWTs. Identity details in a JWT remain a snapshot until the next login; deleting an account or changing its password would not invalidate an existing JWT. Individual immediate token revocation would require server-side state. Rotating the signing key invalidates all outstanding tokens.
+
+Run `npm run setup` when upgrading to generate the missing local `JWT_SECRET`, then `npm run db:migrate` and restart the API. Existing opaque cookies are no longer accepted, so existing users must sign in again. Production must supply its own cryptographically random 32-byte secret encoded as 64 hexadecimal characters. There is no fallback key; missing or malformed keys prevent startup. All API instances must use the same `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, and lifetime configuration. Keep the secret in the deployment secret store, never in source control or a `VITE_*` variable.
+
+Cookies are HttpOnly, host-only, and SameSite=Lax; production uses the Secure `__Host-pramod_access` cookie, and development uses `pramod_access`. The cookie expires with its JWT, and token values are never returned in JSON or stored in browser storage. `/auth/me` returns an `expiresAt` timestamp for the UI. All API responses use `Cache-Control: no-store`. Authenticated writes require JSON and an exact allowed `Origin`, including login and registration. Rate counters are shared in PostgreSQL, so adding API instances does not bypass the limits.
 
 Set `FRONTEND_ORIGIN`, `RECEPTION_ORIGIN`, and `OWNER_ORIGIN` to the exact HTTPS origins for production. Each frontend must serve its SPA routes and reverse-proxy `/api` to Express while preserving the browser's Origin header. Configure the three public `VITE_*_URL` values when building. Development additionally allows localhost/127.0.0.1 equivalents at the configured ports. Cookies remain host-only: accounts and permissions are shared, but different production hosts require separate sign-ins. Cross-host SSO is not implemented, and no tokens are passed in URLs or browser storage.
 
-The application does not trust forwarded client IP headers by default; before deploying behind a proxy, configure Express trust-proxy for that specific topology. Otherwise IP-based auth throttles apply to the proxy address. Delete expired session/rate-limit records through an operational maintenance job as usage grows.
+The application does not trust forwarded client IP headers by default; before deploying behind a proxy, configure Express trust-proxy for that specific topology. Otherwise IP-based auth throttles apply to the proxy address. Delete expired rate-limit records through an operational maintenance job as usage grows.
 
 This is a local development implementation. Email verification, password recovery, MFA, payments/taxes, production backups/monitoring, pagination beyond the latest 100 reservations, and a notification delivery provider are not implemented. Replace demo prices and hotel content before launch. Never use the local database credentials in deployment.
 
@@ -185,11 +191,11 @@ This is a local development implementation. Email verification, password recover
 
 Booking confirmation/cancellation writes an event into `notification_outbox` in the same transaction as the reservation change. Events remain pending; there is no email/SMS worker running and no external messages are sent. A later worker should claim pending events, use provider idempotency/deduplication, retry transient failures, and record delivery. Event recording is durable, but recording an event is not notification delivery.
 
-The initial deployment remains one modular Express service plus PostgreSQL. Additional API instances can share database sessions and rate limits behind an HTTPS load balancer. Add Redis for measured cache/rate-limit needs later; it must not decide reservation availability. Monitoring and operational alerts belong alongside API/database/worker activity, independently of guest notification jobs.
+The initial deployment remains one modular Express service plus PostgreSQL. Additional API instances verify JWTs independently using the same signing configuration behind an HTTPS load balancer; database permissions and rate limits remain shared. Add Redis for measured cache/rate-limit needs later; it must not decide reservation availability. Monitoring and operational alerts belong alongside API/database/worker activity, independently of guest notification jobs.
 
 ## Integration verification
 
-`npm run test:integration` requires the local database and creates a randomly named `hotel_test_*` schema. It applies all migrations, creates synthetic hotel/account fixtures, runs real HTTP requests, and drops that schema afterward. It refuses a production configuration and does not alter existing hotel/account rows. Coverage includes role escalation attempts, invitation replay/expiry, removed staff, cross-hotel access, session expiry/logout, forged prices, simultaneous reservations, database overlap rejection, cancellation, checkout-day reuse, and housekeeping transitions.
+`npm run test:integration` requires the local database and creates a randomly named `hotel_test_*` schema. It applies all migrations, uses a temporary signing key and synthetic hotel/account fixtures, runs real HTTP requests, and drops that schema afterward. It refuses a production configuration and does not alter existing hotel/account rows. Coverage includes role escalation attempts, invitation replay/expiry, removed staff with still-valid JWTs, cross-hotel access, JWT expiry/tampering, cookie logout and replay semantics, forged prices, simultaneous reservations, database overlap rejection, cancellation, checkout-day reuse, and housekeeping transitions. API unit tests additionally cover claim validation, algorithm restrictions, production cookies, and authentication without a database.
 
 ## API behavior
 
@@ -198,7 +204,7 @@ The initial deployment remains one modular Express service plus PostgreSQL. Addi
 | `GET /api/health` | Process liveness; stays healthy when PostgreSQL is offline |
 | `GET /api/ready` | Runs a real database query; returns 503 when unavailable |
 | `GET /api/properties/:slug` | Public property details and room types; 404 for unknown slugs |
-| `POST /api/auth/register`, `/login`, `/logout`; `GET /api/auth/me` | Account and session lifecycle |
+| `POST /api/auth/register`, `/login`, `/logout`; `GET /api/auth/me` | Account and JWT authentication lifecycle |
 | `GET /api/properties/:propertyId/availability` | Public date/capacity availability and current room totals |
 | `POST /api/properties/:propertyId/bookings` | Customer reservation with authoritative price and idempotency key |
 | `GET /api/bookings`; `POST /api/bookings/:id/cancel` | Own reservations and cancellation |

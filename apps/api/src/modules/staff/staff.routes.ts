@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { pool } from '../../db/pool.js';
 import { transaction } from '../../db/transaction.js';
 import { email, HttpError, parse, propertyParam, uuid } from '../../lib/http.js';
-import { account, requireUser } from '../auth/session.js';
+import { account, requireUser } from '../auth/auth.js';
 import { digest, rateLimit, token } from '../auth/security.js';
 import { audit, lockProperty, requireRole } from './permissions.js';
 
