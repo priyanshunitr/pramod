@@ -13,6 +13,13 @@ Visual composition reference supplied by the user:
 https://in.pinterest.com/pin/959477895677936736/
 The Pinterest video and its Zillow branding are not distributed with the site.
 
+pramod-night-retreat-v1.png: Original AI-generated resort concept, 2026-11-02.
+Created using the built-in OpenAI image generator; 1672 x 941, opaque PNG.
+Inspired by the user's nighttime tropical villa and infinity-pool reference.
+The generated scene contains no reference branding or text and is not a photo of Pramod.
+Full generation prompt: pramod-night-retreat-v1.prompt.txt.
+The Unsplash license above applies to the stock photos below, not this generated asset.
+
 hotel-pool.jpg: Cory Bjork / Unsplash
 https://unsplash.com/photos/swimming-pool-near-palm-trees-during-daytime-D1yT791Nf9A
 https://images.unsplash.com/photo-1623718649591-311775a30c43
