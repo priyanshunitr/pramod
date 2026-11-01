@@ -35,15 +35,23 @@ export function InteriorSection() {
       const availableTravel = tracks.map(track => pinned
         ? Math.max(0, track.getBoundingClientRect().height - track.parentElement!.getBoundingClientRect().height)
         : 0);
-      starts = tracks.map((track, index) => {
+      const paths = tracks.map((track, index) => {
+        const available = availableTravel[index] ?? 0;
         const firstFrame = track.firstElementChild;
-        const frameStep = (firstFrame?.getBoundingClientRect().height ?? 0) + parseFloat(getComputedStyle(track).rowGap);
-        return Math.min(availableTravel[index] ?? 0, frameStep * Number(track.dataset.startFrame ?? 0));
+        const frameStep = (firstFrame?.getBoundingClientRect().height ?? 0) + (parseFloat(getComputedStyle(track).rowGap) || 0);
+        const stagger = Math.min(available, frameStep * Number(track.dataset.startFrame ?? 0));
+        if (track.dataset.direction === 'down' && frameStep > 0) {
+          // Start near the bottom, aligned half a frame from the other roll.
+          // Both endpoints stay inside the track so moving down never exposes a gap.
+          const start = stagger + Math.floor((available - stagger) / frameStep) * frameStep;
+          return { start, end: 0 };
+        }
+        return { start: stagger, end: available };
       });
-      travel = availableTravel.map((available, index) => available - (starts[index] ?? 0));
-      // Different track lengths produce different speeds, with both last frames
-      // reaching the bottom together before the sticky stage releases.
-      distance = Math.max(0, ...travel);
+      starts = paths.map(path => path.start);
+      travel = paths.map(path => path.end - path.start);
+      // Signed travel gives opposite directions; both rolls finish before release.
+      distance = Math.max(0, ...travel.map(Math.abs));
       section.style.setProperty('--film-scroll-distance', `${distance}px`);
       cancelAnimationFrame(frame);
       update();
