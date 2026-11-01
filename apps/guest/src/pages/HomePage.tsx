@@ -1,17 +1,14 @@
 import { ArrowDown, ArrowUpRight, Coffee, ConciergeBell, Waves, Wifi } from 'lucide-react';
 import { Link } from 'react-router';
-import { formatMoney, hotel, roomPresentation } from '../config/hotel';
+import { featuredRooms, formatMoney, hotel } from '../config/hotel';
 import { StaySearch } from '../components/StaySearch';
-import { CatalogFeedback } from '../components/CatalogFeedback';
 import { Reveal } from '../components/Reveal';
 import { ArchitecturalHero } from '../components/ArchitecturalHero';
-import { useCatalog } from '../context/CatalogContext';
 
 const rateLabel = (minor: number | null, currency?: string) => minor === null ? 'Rate on request' : `From ${formatMoney(minor / 100, currency)} / night`;
 
 export function HomePage() {
-  const { property, loading, error } = useCatalog();
-  const rooms = !loading && !error ? property?.roomTypes ?? [] : [];
+  const rooms = featuredRooms;
 
   return <div className="hotel-experience">
     <ArchitecturalHero />
@@ -29,30 +26,26 @@ export function HomePage() {
           <Link className="round-link" to="/rooms">Find your kind of comfort <span><ArrowUpRight size={20} /></span></Link>
         </Reveal>
         <Reveal className="room-fan" delay={120}>
-          <CatalogFeedback />
-          {rooms.slice(0, 3).map((room, index) => <Link key={room.id} to={`/rooms/${room.id}`} className={`fan-card fan-card-${index}`} aria-label={`Explore ${room.name}`}>
-            <img src={roomPresentation(room.name).image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
+          {rooms.map((room, index) => <Link key={room.slug} to={`/rooms/${room.slug}`} className={`fan-card fan-card-${index}`} aria-label={`Explore ${room.name}`}>
+            <img src={room.image} alt={`Illustrative ${room.name.toLowerCase()} interior`} width="600" height="450" loading="lazy" />
             <div className="fan-card-caption"><span><strong>{room.name}</strong><small>Up to {room.maxGuests} guests · Your space to unwind</small></span><ArrowUpRight size={21} /></div>
-            <div className="fan-card-price">{rateLabel(room.nightlyRateMinor, property?.currency)}</div>
+            <div className="fan-card-price">{rateLabel(room.startingRateMinor, room.currency)}</div>
           </Link>)}
-          {!loading && !error && rooms.length === 0 && <p className="empty-state">Our room collection is being prepared. Please check back soon.</p>}
-          {rooms.length > 0 && <span className="fan-note">A room for every kind of getaway. <ArrowDown size={14} /></span>}
+          <span className="fan-note">A room for every kind of getaway. <ArrowDown size={14} /></span>
         </Reveal>
       </div>
     </section>
     <section className="room-collection" id="rooms" data-header-tone="light" aria-labelledby="collection-title">
       <div className="container">
         <div className="section-kicker"><h2 id="collection-title">/ The room collection</h2><span>Make yourself at home.</span></div>
-        <CatalogFeedback />
-        {rooms.map((room, index) => <Reveal key={room.id} delay={index * 70}>
-          <Link to={`/rooms/${room.id}`} className="collection-row" aria-label={`Explore ${room.name}, ${rateLabel(room.nightlyRateMinor, property?.currency)}`}>
+        {rooms.map((room, index) => <Reveal key={room.slug} delay={index * 70}>
+          <Link to={`/rooms/${room.slug}`} className="collection-row" aria-label={`Explore ${room.name}, ${rateLabel(room.startingRateMinor, room.currency)}`}>
             <span className="collection-index">/ 0{index + 1}</span>
-            <div className="collection-name"><h3>{room.name}</h3><p>Up to {room.maxGuests} guests <span>·</span> {rateLabel(room.nightlyRateMinor, property?.currency)}</p></div>
-            <img className="collection-preview" src={roomPresentation(room.name).image} alt="" width="320" height="240" loading="lazy" />
+            <div className="collection-name"><h3>{room.name}</h3><p>Up to {room.maxGuests} guests <span>·</span> {rateLabel(room.startingRateMinor, room.currency)}</p></div>
+            <img className="collection-preview" src={room.image} alt="" width="320" height="240" loading="lazy" />
             <span className="collection-arrow"><ArrowUpRight size={25} strokeWidth={1.3} /></span>
           </Link>
         </Reveal>)}
-        {!loading && !error && rooms.length === 0 && <p className="empty-state">New spaces to settle into are on their way.</p>}
         <div className="collection-bottom"><p>A little everyday luxury, at your own pace.</p><Link to="/rooms" className="text-link">See rooms & availability <ArrowUpRight size={18} /></Link></div>
       </div>
     </section>

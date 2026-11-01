@@ -2,12 +2,10 @@ import { useId, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, UsersRound } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { hotel } from '../config/hotel';
-import { useCatalog } from '../context/CatalogContext';
 import { addDays, stayFromParams, stayQuery, todayAtHotel, validateStay } from '../lib/stay';
 
-export function StaySearch({ compact = false, roomId }: { compact?: boolean; roomId?: string }) {
-  const { property } = useCatalog();
-  const today = todayAtHotel(property?.timezone ?? hotel.timezone);
+export function StaySearch({ compact = false, roomId, timezone = hotel.timezone }: { compact?: boolean; roomId?: string; timezone?: string }) {
+  const today = todayAtHotel(timezone);
   const [params] = useSearchParams();
   const [stay, setStay] = useState(() => stayFromParams(params, today));
   const [error, setError] = useState<string | null>(null);

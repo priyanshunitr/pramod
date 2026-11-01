@@ -23,7 +23,7 @@ export function RoomsPage() {
   });
   if (sort !== 'recommended') rooms.sort((a, b) => a.nightlyRateMinor - b.nightlyRateMinor);
   return <div className="container page-content"><div className="page-heading"><p className="eyebrow">ROOMS & SUITES</p><h1>A space that feels<br /><em>like yours.</em></h1><p>Choose your dates, bring your favourite people, and find your corner of {hotel.name}.</p></div>
-    <StaySearch key={params.toString()} compact />
+    <StaySearch key={params.toString()} compact timezone={property?.timezone} />
     <div className="results-toolbar"><p>{availability.loading ? 'Checking availability…' : `${rooms.length} available room types for ${stay.guests} ${stay.guests === 1 ? 'guest' : 'guests'}`}<span>Availability checked for your dates · confirmed when reserved</span></p><label><SlidersHorizontal size={15} /><span className="sr-only">Sort rooms</span><select value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">Recommended</option><option value="price">Price: low to high</option></select></label></div>
     <CatalogFeedback />
     {problem && <div className="empty-state" role="alert"><h2>Let’s adjust your stay.</h2><p>{problem}</p><button className="button secondary" onClick={() => setParams({})}>Reset dates and guests</button></div>}

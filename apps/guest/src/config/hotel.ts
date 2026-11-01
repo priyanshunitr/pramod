@@ -2,6 +2,14 @@
 import { propertySlug } from '@hotel/api-client';
 export const hotel = { name: 'Pramod', descriptor: 'A BOUTIQUE STAY', slug: propertySlug, timezone: 'Asia/Kolkata', heroImage: '/images/hotel-pool.jpg' };
 
+// Homepage content is maintained here, independently of bookable inventory.
+// These illustrative starting rates are not booking quotes.
+export const featuredRooms = [
+  { slug: 'classic-room', name: 'Classic Room', maxGuests: 2, startingRateMinor: 450000, currency: 'INR', image: '/images/classic-room.jpg' },
+  { slug: 'deluxe-room', name: 'Deluxe Room', maxGuests: 3, startingRateMinor: 650000, currency: 'INR', image: '/images/deluxe-room.jpg' },
+  { slug: 'family-suite', name: 'Family Suite', maxGuests: 4, startingRateMinor: 950000, currency: 'INR', image: '/images/family-suite.jpg' },
+] as const;
+
 export function roomPresentation(name: string) {
   const collection: Record<string, { image: string; tag: string; bed: string; intro: string }> = {
     'Classic Room': { image: '/images/classic-room.jpg', tag: 'A LITTLE EVERYDAY LUXURY', bed: 'Double bed', intro: 'Soft light, a comfortable bed, and everything in its right place. A quiet corner to make your own.' },
