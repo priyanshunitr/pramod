@@ -1,10 +1,11 @@
 import { featuredRooms } from '../config/hotel';
 
 const alternateRooms = [featuredRooms[1], featuredRooms[2], featuredRooms[0]] as const;
-// Extra frames extend the scroll sequence; the longer second roll travels faster.
+// Landscape frames are shorter, so repeat the sequence to preserve the long scroll.
+// The longer second roll travels faster and starts half a frame ahead.
 const interiorRolls = [
-  { rooms: [...featuredRooms, ...featuredRooms], startFrame: 0 },
-  { rooms: [...alternateRooms, ...alternateRooms, ...alternateRooms.slice(0, 2)], startFrame: 0.5 },
+  { rooms: Array.from({ length: 12 }, (_, index) => featuredRooms[index % featuredRooms.length]!), startFrame: 0 },
+  { rooms: Array.from({ length: 16 }, (_, index) => alternateRooms[index % alternateRooms.length]!), startFrame: 0.5 },
 ] as const;
 
 export function InteriorFilmstrip() {

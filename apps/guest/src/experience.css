@@ -96,12 +96,11 @@ em { font-style: normal; }
 .filmstrip-track::after { right: 8px; }
 .filmstrip-frame { flex: 0 0 auto; width: 100%; }
 .filmstrip-frame figure { margin: 0; }
-.filmstrip-frame img { width: 100%; height: max(240px, 44svh); }
+.filmstrip-frame img { width: 100%; height: auto; aspect-ratio: 3 / 2; }
 .filmstrip-frame figcaption { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; color: #e4ca94; font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; }
 .filmstrip-frame figcaption > span:last-child { flex-shrink: 0; }
 .stay-introduction[data-scroll-mode='static'] .introduction-grid { height: auto; }
 .stay-introduction[data-scroll-mode='static'] .filmstrip-viewport { height: auto; overflow: visible; }
-.stay-introduction[data-scroll-mode='static'] .filmstrip-frame img { height: auto; aspect-ratio: 4 / 3; }
 .stay-introduction[data-scroll-mode='static'] .filmstrip-frame[aria-hidden='true'] { display: none; }
 
 /* Wide, quiet rows mirror the reference's dark collection chapter. */
@@ -199,7 +198,6 @@ em { font-style: normal; }
   .filmstrip-columns { gap: 12px; }
   .filmstrip-track { padding-inline: 20px; }
   .filmstrip-frame figcaption { font-size: 8px; gap: 4px; }
-  .filmstrip-frame img { height: max(220px, 40svh); }
   .collection-row { gap: 15px; min-height: 145px; }
   .collection-name h3 { font-size: 7vw; }
   .collection-preview { width: 120px; height: 85px; }
@@ -253,7 +251,6 @@ em { font-style: normal; }
   .filmstrip-track::before { left: 6px; }
   .filmstrip-track::after { right: 6px; }
   .filmstrip-frame figcaption { font-size: 8px; gap: 4px; }
-  .filmstrip-frame img { height: max(150px, 36svh); }
   .room-collection { padding-block: 40px 28px; }
   .room-collection .section-kicker { margin-bottom: 28px; }
   .collection-row { padding-block: 27px; min-height: 127px; gap: 10px; }
