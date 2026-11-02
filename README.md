@@ -184,6 +184,17 @@ Add future migrations as numbered SQL files under `apps/api/migrations`. The run
 
 Bootstrap refuses to run once an active owner exists. Invitations expire after seven days, are bound to the invited account email, and can be accepted only once while the issuing owner retains access. The raw code is shown only when created; share it privately with the intended person. No email is sent automatically. There are no seeded accounts, default passwords, or public owner-registration endpoints.
 
+### Reception approval flow
+
+1. Open the reception frontend and sign in or create an account. The form explains that this sends the first reception request to the owner. Already approved staff enter directly. A signed-in guest can explicitly request access from the reception gate.
+2. New applicants see a waiting screen. They retain guest access but cannot read hotel bookings or use reception tools.
+3. Every owner of that hotel sees a reception-request notification in the workspace header. It links to Hotel team, where the owner reviews the applicant’s name, email, and optional introduction, then approves or declines.
+4. Approval creates an active receptionist membership. The waiting screen detects it and opens reception without another sign-in. Declining leaves access unchanged and displays a declined state.
+
+Requests are stored in PostgreSQL and remain visible until reviewed. The header, team list, and waiting screen check every five seconds while the tab is visible, and on focus. These are **in-app notifications**; no email, push delivery, or worker is involved. Approved staff can use the original JWT because authorization reads current membership from the database.
+
+`POST /api/properties/:propertyId/staff/requests` accepts an optional `introduction` (10–500 characters) and `resubmit` boolean. It returns the same access state as `GET .../staff/access`, with HTTP 201 only for a newly created request. Repeated/concurrent sign-ins reuse an existing pending request. Declined or removed staff must deliberately submit a new request with `resubmit: true`; a login retry never restores access or creates another notification. New requests are limited to five per account and hotel per day and audited. `GET .../staff/notifications` returns the owner-only pending count for that hotel.
+
 ## Authentication and deployment boundary
 
 Passwords use salted Node.js scrypt (`N=131072, r=8, p=1`) and must contain 15–128 characters at registration. After password verification, the API issues an HS256 JWT using [jose](https://github.com/panva/jose). Each request verifies the signature, allowed algorithm, token type, issuer, audience, required identity claims, issue time, and expiry before trusting the user ID. Authentication does not read or write a session table or look up the user. Staff permissions still come from the current PostgreSQL membership on each protected operation; permissions are not embedded in JWTs.

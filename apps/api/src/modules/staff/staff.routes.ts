@@ -6,6 +6,7 @@ import { email, HttpError, parse, propertyParam, uuid } from '../../lib/http.js'
 import { account, requireUser } from '../auth/auth.js';
 import { digest, rateLimit, token } from '../auth/security.js';
 import { audit, lockProperty, requireRole } from './permissions.js';
+import { readStaffAccess } from './access.js';
 
 export const staffRouter = Router({ mergeParams: true });
 staffRouter.use(requireUser);
@@ -35,27 +36,39 @@ staffRouter.post('/rooms/:roomId/housekeeping', async (request, response) => {
 staffRouter.get('/access', async (request, response) => {
   const propertyId = propertyParam(request);
   const userId = account(response).id;
-  const memberships = await pool.query('SELECT role FROM staff_memberships WHERE property_id = $1 AND user_id = $2 AND active', [propertyId, userId]);
-  const requests = await pool.query(`SELECT id, status, created_at AS "createdAt" FROM staff_requests
-    WHERE property_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 1`, [propertyId, userId]);
-  response.json({ data: { role: memberships.rows[0]?.role ?? null, request: requests.rows[0] ?? null } });
+  response.json({ data: await readStaffAccess(propertyId, userId) });
 });
 
 staffRouter.post('/requests', async (request, response) => {
   const propertyId = propertyParam(request);
   const userId = account(response).id;
-  const data = parse(z.object({ introduction: z.string().trim().min(10).max(500) }).strict(), request.body);
-  await rateLimit(`staff-request:${propertyId}:${userId}`, 5, 86400);
+  const data = parse(z.object({
+    introduction: z.string().trim().min(10).max(500).default('I would like to join the reception team.'),
+    resubmit: z.boolean().default(false),
+  }).strict(), request.body);
   const result = await transaction(async client => {
     await lockProperty(client, propertyId);
-    const member = await client.query('SELECT 1 FROM staff_memberships WHERE property_id = $1 AND user_id = $2 AND active', [propertyId, userId]);
-    if (member.rowCount) throw new HttpError(409, 'You already have access to this hotel.');
-    const created = await client.query(`INSERT INTO staff_requests(property_id, user_id, introduction) VALUES ($1, $2, $3)
-      ON CONFLICT DO NOTHING RETURNING id, status`, [propertyId, userId, data.introduction]);
-    if (!created.rows[0]) throw new HttpError(409, 'Your access request is already waiting for review.');
-    return created.rows[0];
+    const access = await readStaffAccess(propertyId, userId, client);
+    // A login retry is a read after the first request. Declined or removed staff
+    // must deliberately resubmit; login alone never overturns an owner's decision.
+    if (access.role || access.request?.status === 'pending' || (!data.resubmit && (access.request || access.accessRevoked))) {
+      return { created: false, access };
+    }
+    await rateLimit(`staff-request:${propertyId}:${userId}`, 5, 86400, client);
+    const created = await client.query<{ id: string }>(`INSERT INTO staff_requests(property_id, user_id, introduction)
+      VALUES ($1, $2, $3) RETURNING id`, [propertyId, userId, data.introduction]);
+    await audit(client, propertyId, userId, 'staff.request.created', created.rows[0]!.id);
+    return { created: true, access: await readStaffAccess(propertyId, userId, client) };
   });
-  response.status(201).json({ data: result });
+  response.status(result.created ? 201 : 200).json({ data: result.access });
+});
+
+staffRouter.get('/notifications', async (request, response) => {
+  const propertyId = propertyParam(request);
+  await requireRole(propertyId, account(response).id, true);
+  const result = await pool.query<{ pendingCount: number }>(`SELECT count(*)::int AS "pendingCount"
+    FROM staff_requests WHERE property_id = $1 AND status = 'pending'`, [propertyId]);
+  response.json({ data: result.rows[0] });
 });
 
 staffRouter.get('/team', async (request, response) => {

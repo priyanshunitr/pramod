@@ -9,6 +9,16 @@ export interface Session {
   expiresAt: string | null;
 }
 
+export interface StaffAccess {
+  role: 'owner' | 'receptionist' | null;
+  accessRevoked: boolean;
+  request: { id: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string; reviewedAt: string | null } | null;
+}
+
+export interface StaffNotifications {
+  pendingCount: number;
+}
+
 export interface Booking {
   id: string; propertyId: string; roomTypeId: string; roomTypeName: string;
   checkIn: string; checkOut: string; guests: number; roomNumber: string;

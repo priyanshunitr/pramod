@@ -1,5 +1,6 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { pool } from '../../db/pool.js';
+import type { PoolClient } from 'pg';
 import { HttpError } from '../../lib/http.js';
 
 export const token = () => randomBytes(32).toString('hex');
@@ -24,8 +25,8 @@ export async function verifyPassword(password: string, encoded: string | null): 
   return Boolean(valid && timingSafeEqual(key, Buffer.from(hash!, 'hex')));
 }
 
-export async function rateLimit(key: string, limit: number, windowSeconds: number): Promise<void> {
-  const result = await pool.query<{ attempts: number }>(`
+export async function rateLimit(key: string, limit: number, windowSeconds: number, client: Pick<PoolClient, 'query'> = pool): Promise<void> {
+  const result = await client.query<{ attempts: number }>(`
     INSERT INTO rate_limits(key, attempts, resets_at) VALUES ($1, 1, now() + $2 * interval '1 second')
     ON CONFLICT (key) DO UPDATE SET
       attempts = CASE WHEN rate_limits.resets_at <= now() THEN 1 ELSE rate_limits.attempts + 1 END,

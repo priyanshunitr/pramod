@@ -113,15 +113,64 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
   });
 
   await t.test('reception access stays pending until an owner approves it', async () => {
-    const request = await call(`${staffPath}/requests`, { introduction: 'I work at the reception desk.' }, receptionist.cookie);
-    assert.equal(request.status, 201);
-    assert.equal((await call(`${staffPath}/requests`, { introduction: 'Duplicate request.' }, receptionist.cookie)).status, 409);
-    const review = `${staffPath}/requests/${request.payload.data.id}/review`;
+    assert.equal((await call(`${staffPath}/requests`, {})).status, 401);
+    assert.equal((await call(`${staffPath}/requests`, { role: 'owner' }, receptionist.cookie)).status, 400);
+    const attempts = await Promise.all(Array.from({ length: 6 }, () => call(`${staffPath}/requests`, {}, receptionist.cookie)));
+    assert.equal(attempts.filter(result => result.status === 201).length, 1);
+    assert.equal(attempts.filter(result => result.status === 200).length, 5);
+    const requestId = attempts[0]!.payload.data.request.id;
+    assert.ok(attempts.every(result => result.payload.data.request.id === requestId));
+    assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 403);
+    const access = (await call(`${staffPath}/access`, undefined, receptionist.cookie)).payload.data;
+    assert.equal(access.role, null);
+    assert.equal(access.request.status, 'pending');
+    const notifications = `${staffPath}/notifications`;
+    assert.equal((await call(notifications)).status, 401);
+    for (const user of [customer, receptionist, outsider]) assert.equal((await call(notifications, undefined, user.cookie)).status, 403);
+    assert.equal((await call(notifications, undefined, owner.cookie)).payload.data.pendingCount, 1);
+    assert.equal((await call(`/properties/${otherHotel}/staff/notifications`, undefined, outsider.cookie)).payload.data.pendingCount, 0);
+    assert.equal((await call(`${staffPath}/team`, undefined, owner.cookie)).payload.data.requests[0].email, receptionist.email);
+    const review = `${staffPath}/requests/${requestId}/review`;
     assert.equal((await call(review, { decision: 'approved' }, receptionist.cookie)).status, 403);
     assert.equal((await call(review, { decision: 'approved' }, outsider.cookie)).status, 403);
     assert.equal((await call(review, { decision: 'approved' }, owner.cookie)).status, 200);
+    assert.equal((await call(review, { decision: 'approved' }, owner.cookie)).status, 409);
+    assert.equal((await call(notifications, undefined, owner.cookie)).payload.data.pendingCount, 0);
+    assert.equal((await call(`${staffPath}/access`, undefined, receptionist.cookie)).payload.data.role, 'receptionist');
+    assert.equal((await call('/auth/me', undefined, receptionist.cookie)).payload.data.memberships[0].role, 'receptionist');
+    assert.equal((await call(`${staffPath}/requests`, {}, receptionist.cookie)).payload.data.request.id, requestId);
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM audit_events WHERE action = 'staff.request.created' AND subject_id = $1", [requestId])).rows[0].count, 1);
+    // The original JWT gains access through the approved database membership.
     assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 200);
     assert.equal((await call(`${staffPath}/invitations`, { email: customer.email, role: 'owner' }, receptionist.cookie)).status, 403);
+  });
+
+  await t.test('declines and revocations require deliberate resubmission, never a login retry', async () => {
+    const request = await call(`${staffPath}/requests`, {}, outsider.cookie);
+    const id = request.payload.data.request.id;
+    await call(`${staffPath}/requests/${id}/review`, { decision: 'rejected' }, owner.cookie);
+    const repeat = await call(`${staffPath}/requests`, {}, outsider.cookie);
+    assert.equal(repeat.status, 200);
+    assert.equal(repeat.payload.data.request.id, id);
+    assert.equal(repeat.payload.data.request.status, 'rejected');
+    assert.equal((await call(bookingPath, undefined, outsider.cookie)).status, 403);
+    assert.equal((await call(`${staffPath}/notifications`, undefined, owner.cookie)).payload.data.pendingCount, 0);
+    const resubmitted = await call(`${staffPath}/requests`, { resubmit: true, introduction: 'The owner asked me to request access again.' }, outsider.cookie);
+    assert.equal(resubmitted.status, 201);
+    assert.notEqual(resubmitted.payload.data.request.id, id);
+    await call(`${staffPath}/requests/${resubmitted.payload.data.request.id}/review`, { decision: 'approved' }, owner.cookie);
+    await call(`${staffPath}/members/${outsider.id}/revoke`, {}, owner.cookie);
+    const revoked = await call(`${staffPath}/requests`, {}, outsider.cookie);
+    assert.equal(revoked.payload.data.accessRevoked, true);
+    assert.equal(revoked.payload.data.role, null);
+    assert.equal(revoked.payload.data.request.status, 'approved');
+    assert.equal((await call(bookingPath, undefined, outsider.cookie)).status, 403);
+    assert.equal((await call(`${staffPath}/notifications`, undefined, owner.cookie)).payload.data.pendingCount, 0);
+    const rejoin = await call(`${staffPath}/requests`, { resubmit: true }, outsider.cookie);
+    assert.equal(rejoin.status, 201);
+    assert.equal(rejoin.payload.data.role, null);
+    assert.equal(rejoin.payload.data.request.status, 'pending');
+    await call(`${staffPath}/requests/${rejoin.payload.data.request.id}/review`, { decision: 'rejected' }, owner.cookie);
   });
 
   await t.test('invitations are email-bound, expiring, and single-use; the final owner is protected', async () => {
@@ -138,8 +187,10 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(`${staffPath}/team`, undefined, customer.cookie)).status, 403);
     assert.equal((await call(`${staffPath}/members/${owner.id}/revoke`, {}, owner.cookie)).status, 409);
     // A former owner requesting reception access must not regain owner privileges.
-    const request = await call(`${staffPath}/requests`, { introduction: 'Rejoining as a receptionist.' }, customer.cookie);
-    assert.equal((await call(`${staffPath}/requests/${request.payload.data.id}/review`, { decision: 'approved' }, owner.cookie)).status, 200);
+    const automatic = await call(`${staffPath}/requests`, {}, customer.cookie);
+    assert.equal(automatic.payload.data.request, null, 'removed invited members do not automatically request again');
+    const request = await call(`${staffPath}/requests`, { introduction: 'Rejoining as a receptionist.', resubmit: true }, customer.cookie);
+    assert.equal((await call(`${staffPath}/requests/${request.payload.data.request.id}/review`, { decision: 'approved' }, owner.cookie)).status, 200);
     assert.equal((await call(`${staffPath}/access`, undefined, customer.cookie)).payload.data.role, 'receptionist');
     await call(`${staffPath}/members/${customer.id}/revoke`, {}, owner.cookie);
   });
