@@ -1,25 +1,31 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowUpRight, Check, Copy, RefreshCw, UsersRound } from 'lucide-react';
 import { useStaffRequest } from './WorkspaceContext';
+import { pollStaff, STAFF_ACCESS_CHANGED } from './pollStaff';
 
 interface Team { members: { id: string; fullName: string; email: string; role: string }[]; requests: { id: string; fullName: string; email: string; introduction: string }[]; }
 export function TeamPanel({ propertyId, onChange }: { propertyId: string; onChange: () => void }) {
   const request = useStaffRequest();
   const [team, setTeam] = useState<Team | null>(null); const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ token: string; expiresAt: string } | null>(null);
   const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true); const [version, setVersion] = useState(0);
   const [revoke, setRevoke] = useState<string | null>(null); const [message, setMessage] = useState(''); const [copied, setCopied] = useState(false);
   const base = `/properties/${propertyId}/staff`;
   useEffect(() => {
-    const controller = new AbortController(); setLoading(true); setError(null);
-    request<Team>(`${base}/team`, undefined, controller.signal).then(data => { if (!controller.signal.aborted) setTeam(data); })
-      .catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Could not load your team.'); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [base, version, request]);
+    if (busy) return;
+    setLoading(true);
+    return pollStaff(async signal => {
+      try {
+        const data = await request<Team>(`${base}/team`, undefined, signal);
+        if (!signal.aborted) { setTeam(data); setLoadError(null); }
+      } catch (cause) { if (!signal.aborted) setLoadError(cause instanceof Error ? cause.message : 'Could not load your team.'); }
+      finally { if (!signal.aborted) setLoading(false); }
+    });
+  }, [base, version, request, busy]);
   async function act(path: string, body: unknown, success: string) {
     setBusy(true); setError(null); setMessage('');
-    try { await request(`${base}${path}`, body); setVersion(value => value + 1); setRevoke(null); setMessage(success); onChange(); }
+    try { await request(`${base}${path}`, body); setVersion(value => value + 1); setRevoke(null); setMessage(success); window.dispatchEvent(new Event(STAFF_ACCESS_CHANGED)); if (path.endsWith('/revoke')) onChange(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update the team.'); }
     finally { setBusy(false); }
   }
@@ -32,7 +38,7 @@ export function TeamPanel({ propertyId, onChange }: { propertyId: string; onChan
   }
   return <section className="workspace-section page-enter"><div className="portal-page-heading"><div><p className="eyebrow">THE PEOPLE BEHIND THE WELCOME</p><h1>A good stay takes <em>a team.</em></h1><p>Invite trusted colleagues and manage their access to Pramod.</p></div><button className="button secondary" disabled={busy || loading} onClick={() => setVersion(value => value + 1)}><RefreshCw size={14} />Refresh</button></div>
     {team && <div className="team-summary"><span><strong>{team.members.length}</strong> active members</span><span><strong>{team.requests.length}</strong> access requests</span></div>}
-    {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="notice" role="status">{message}</p>}
+    {(error || loadError) && <p className="form-error" role="alert">{error || loadError}</p>}{message && <p className="notice" role="status">{message}</p>}
     {loading && !team && <p className="fine-print" role="status">Loading your hotel team…</p>}
     <div className="workspace-columns"><div><h3>Access requests</h3>{team?.requests.length === 0 && <div className="team-card"><UsersRound size={20} /><p>All caught up. No requests waiting for review.</p></div>}{team?.requests.map(item => <article className="team-card" key={item.id}><strong>{item.fullName}</strong><p>{item.email}</p><p>{item.introduction}</p><div className="reservation-actions"><button className="button primary" disabled={busy || loading} onClick={() => act(`/requests/${item.id}/review`, { decision: 'approved' }, `${item.fullName} now has reception access.`)}>Approve receptionist <Check size={14} /></button><button className="text-link" disabled={busy || loading} onClick={() => act(`/requests/${item.id}/review`, { decision: 'rejected' }, 'Access request declined.')}>Decline</button></div></article>)}
       <h3>Active members</h3>{team?.members.map(member => <article className="team-card" key={member.id}><div className="guest-cell"><span className="guest-initials" aria-hidden="true">{member.fullName.split(' ').map(word => word[0]).slice(0, 2).join('')}</span><div><strong>{member.fullName}</strong><small>{member.role === 'owner' ? 'Owner' : 'Receptionist'}</small></div></div><p>{member.email}</p>{revoke === member.id ? <div className="reservation-actions"><span>Remove hotel access?</span><button className="button secondary" disabled={busy || loading} onClick={() => act(`/members/${member.id}/revoke`, {}, `${member.fullName} no longer has hotel access.`)}>Confirm removal</button><button className="text-link" disabled={busy} onClick={() => setRevoke(null)}>Keep access</button></div> : <button className="text-link" disabled={busy || loading} onClick={() => setRevoke(member.id)}>Remove access</button>}</article>)}

@@ -184,3 +184,24 @@ em { font-style: normal; font-weight: inherit; }
 @media (max-width:760px) { .portal-layout { display: block; } .portal-sidebar { padding: 19px 20px; height: auto; position: relative; } .portal-sidebar .portal-wordmark { font-size: 29px; } .mobile-nav-toggle { display: inline-flex; position: absolute; top: 17px; right: 16px; } .portal-sidebar nav { display: none; flex-direction: column; margin-top: 23px; } .portal-sidebar.menu-open nav { display: flex; } .portal-sidebar nav a { min-height: 43px; padding: 12px; } .sidebar-bottom { display: none; position: static; padding-top: 20px; } .menu-open .sidebar-bottom { display: block; } .menu-open .sidebar-bottom > a { display: flex; } .menu-open .sidebar-account { display: flex; border-top: 1px solid #ffffff1a; padding-top: 15px; } .menu-open .sidebar-account > div, .menu-open .account-avatar { display: block; } .menu-open .account-avatar { display: grid; } .sidebar-note { display: none; } .portal-topbar { height: 50px; padding-inline: 20px; } .preview-banner { padding: 9px 20px; align-items: center; font-size: 9px; line-height: 1.6; } .preview-banner > span { max-width: 230px; } #workspace-main { padding: 25px 20px 35px; } .portal-page-heading { align-items: flex-start; } .portal-page-heading h1 { font-size: 31px; } .heading-date > span { display: none; } .metric-card, .desk-metric { padding: 17px; } .metric-value, .desk-metric > strong { font-size: 36px; } .desk-panel-heading { padding: 20px; } .portal-footer { padding-inline: 20px; } .room-snapshot-grid { grid-template-columns: repeat(6,minmax(0,1fr)); } .room-ready-card { padding: 18px; } .section-toolbar { align-items: stretch; } .section-toolbar .search-field { width: 100%; } .section-toolbar .filter-tabs { gap: 2px; } .section-toolbar .filter-tabs button { padding: 8px 10px; } }
 @media (max-width:420px) { .room-ready-grid { grid-template-columns: 1fr; } .portal-page-heading { gap: 10px; } .metrics-grid, .desk-metrics { gap: 10px; } .metric-note { font-size: 9px; } .metric-value { font-size: 34px; } .money-values { font-size: 26px; } .desk-panel-heading { align-items: flex-start; } .desk-panel-heading h2 { font-size: 19px; } .detail-grid { gap: 20px 14px; } }
 @media (prefers-reduced-motion:reduce) { .page-enter { animation: none; } }
+
+/* Reception approval and persistent owner request notifications. */
+.topbar-actions { display: flex; align-items: center; gap: 20px; }
+.owner-notifications { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 22px; color: var(--ink); font-size: 11px; }
+.owner-notifications.has-requests { background: #e9efde; border-color: #cedbbd; }
+.notification-count { min-width: 20px; height: 20px; padding-inline: 4px; display: grid; place-items: center; background: #e4e8de; border-radius: 50%; font-size: 10px; font-weight: 600; }
+.has-requests .notification-count { background: #253321; color: #fff; }
+.approval-steps { list-style: none; padding: 24px 0; margin: 24px 0; border-block: 1px solid var(--line); display: grid; gap: 22px; }
+.approval-steps li { display: flex; align-items: center; gap: 13px; color: var(--muted); }
+.approval-steps li > span { width: 29px; height: 29px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 11px; }
+.approval-steps strong { display: block; font-size: 13px; font-weight: 550; }
+.approval-steps small { display: block; margin-top: 4px; font-size: 11px; }
+.approval-steps .complete > span { background: #e7eddd; border-color: #e7eddd; color: #4d653c; }
+.approval-steps .current { color: var(--ink); }
+.approval-steps .current > span { background: #253321; border-color: #253321; color: #fff; }
+.approval-notice { background: #edf1e5; border: 1px solid #dce5d0; border-radius: 8px; padding: 20px; margin-bottom: 22px; }
+.approval-notice strong { font-size: 14px; font-weight: 550; }
+.approval-notice p { margin: 9px 0 12px; font-size: 12px; line-height: 1.7; color: #5b6850; }
+.approval-notice small { color: #6c7960; font-size: 10px; }
+.access-card > p { overflow-wrap: anywhere; }
+@media (max-width:760px) { .topbar-actions { gap: 8px; } .topbar-actions .access-label, .notification-label { display: none; } .owner-notifications { padding: 5px 8px; gap: 5px; } .access-card { margin-block: 30px; } .access-card h1 { font-size: 30px; } }

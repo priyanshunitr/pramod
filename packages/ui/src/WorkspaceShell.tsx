@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router';
 import { ArrowUpRight, BedDouble, CalendarDays, LayoutDashboard, LogOut, Sparkles, UsersRound, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { frontendUrl } from '@hotel/api-client';
 import { useWorkspace } from './WorkspaceContext';
+import { OwnerNotifications } from './OwnerNotifications';
 
 export function WorkspaceShell({ owner = false, children }: { owner?: boolean; children: ReactNode }) {
   const workspace = useWorkspace(); const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState(false);
@@ -21,7 +22,7 @@ export function WorkspaceShell({ owner = false, children }: { owner?: boolean; c
       <div className="property-chip"><span className="property-monogram">P</span><div><strong>{workspace.property.name}</strong><small>{owner ? 'Owner workspace' : 'Reception workspace'}</small></div></div>
       <p className="nav-caption">WORKSPACE</p><nav id="workspace-navigation" aria-label="Workspace navigation">{links.map(({ path, title, Icon }) => <NavLink key={path} to={path} end><Icon size={18} strokeWidth={1.6} /><span>{title}</span></NavLink>)}</nav>
       <div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">A LITTLE CARE. EVERY DAY.</span><p>{owner ? 'A thoughtful stay starts with a clear view.' : 'Small details. Memorable welcomes.'}</p></div><a href={frontendUrl('guest')}>Guest website <ArrowUpRight size={16} /></a><a href={`${frontendUrl(owner ? 'reception' : 'owner')}${workspace.preview ? '/preview/' : ''}`}>{owner ? 'Reception workspace' : 'Owner workspace'} <ArrowUpRight size={16} /></a><div className="sidebar-account"><span className="account-avatar">{workspace.user.fullName.slice(0, 1).toUpperCase()}</span><div><strong>{workspace.user.fullName}</strong><small>{workspace.preview ? 'Sample workspace' : owner ? 'Hotel owner' : 'Hotel team'}</small></div><button className="icon-button" aria-label={workspace.preview ? 'Exit preview' : 'Sign out'} onClick={logout} disabled={busy}><LogOut size={17} /></button></div>{error && <p role="alert">{error}</p>}</div>
-    </aside><div className="portal-body"><header className="portal-topbar"><span>{owner ? 'Owner' : 'Reception'} <span className="breadcrumb-slash">/</span><strong>{activePage}</strong></span><span className="access-label"><LockLabel />{workspace.preview ? 'Preview' : owner ? 'Owner access' : 'Team access'}</span></header>
+    </aside><div className="portal-body"><header className="portal-topbar"><span>{owner ? 'Owner' : 'Reception'} <span className="breadcrumb-slash">/</span><strong>{activePage}</strong></span><div className="topbar-actions">{owner && <OwnerNotifications />}<span className="access-label"><LockLabel />{workspace.preview ? 'Preview' : owner ? 'Owner access' : 'Team access'}</span></div></header>
       {workspace.preview && <div className="preview-banner"><span><strong>Sample workspace</strong> · Fictional data. Changes last until reload.</span><a href="/">Go to sign in <ArrowUpRight size={13} /></a></div>}
       <main id="workspace-main" tabIndex={-1}>{children}</main><footer className="portal-footer"><span>Thoughtful stays. Well-managed days.</span><span>Pramod · {owner ? 'Owner' : 'Reception'}</span></footer></div></div>;
 }

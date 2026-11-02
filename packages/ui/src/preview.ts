@@ -69,6 +69,7 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
       result = report(url.searchParams.get('from') || today, url.searchParams.get('to') || addDays(today, 7), url.searchParams.get('roomTypeId') || '');
     } else if (route === '/bookings' && body === undefined) result = bookings;
     else if (route === '/staff/rooms' && body === undefined) result = rooms;
+    else if (route === '/staff/notifications' && body === undefined) result = { pendingCount: requests.length };
     else if (route === '/availability' && body === undefined) {
       const from = url.searchParams.get('checkIn') || today; const to = url.searchParams.get('checkOut') || addDays(today, 1);
       const snapshot = report(from, to, ''); const nights = (Date.parse(to) - Date.parse(from)) / 86400000;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { OwnerDashboard } from '@hotel/contracts';
+import type { OwnerDashboard, StaffNotifications } from '@hotel/contracts';
 import { createPreviewStore } from '../../../packages/ui/src/preview.ts';
 
 test('sample workspace mutations update reports and room readiness without network access', async () => {
@@ -27,4 +27,16 @@ test('sample data keeps checkout boundaries, role restrictions and invalid actio
   await assert.rejects(store.request(`${base}/bookings/PR-1049/check-in`, {}), /not eligible/);
   await assert.rejects(store.request(`${base}/staff/members/owner/revoke`, {}), /retain at least one owner/);
   await assert.rejects(store.request('/auth/login', {}), /not available/);
+});
+
+test('owner preview request notifications clear after review', async () => {
+  for (const decision of ['approved', 'rejected']) {
+    const store = createPreviewStore('2026-11-02');
+    const base = `/properties/${store.property.id}/staff`;
+    assert.equal((await store.request<StaffNotifications>(`${base}/notifications`)).pendingCount, 1);
+    await store.request(`${base}/requests/request-1/review`, { decision });
+    assert.equal((await store.request<StaffNotifications>(`${base}/notifications`)).pendingCount, 0);
+    const team = await store.request<{ members: { email: string }[] }>(`${base}/team`);
+    assert.equal(team.members.some(member => member.email === 'aditi@example.test'), decision === 'approved');
+  }
 });
