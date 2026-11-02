@@ -101,7 +101,10 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
       const id = route.split('/')[3];
       if (members.find(member => member.id === id)?.role === 'owner' && members.filter(member => member.role === 'owner').length === 1) throw new Error('The hotel must retain at least one owner.');
       members = members.filter(member => member.id !== id); result = { revoked: true };
-    } else if (route === '/staff/invitations' && body !== undefined) result = { token: 'SAMPLE-INVITATION-ONLY-NOT-VALID-FOR-HOTEL-ACCESS', expiresAt: addDays(today, 7) };
+    } else if (route === '/staff/invitations' && body !== undefined) {
+      if (input.role !== 'receptionist') throw new Error('Only receptionists can be invited. Owner accounts are provided by the hotel setup team.');
+      result = { token: 'SAMPLE-INVITATION-ONLY-NOT-VALID-FOR-HOTEL-ACCESS', expiresAt: addDays(today, 7) };
+    }
     else throw new Error('This action is not available in the sample workspace.');
     return structuredClone(result) as T;
   };

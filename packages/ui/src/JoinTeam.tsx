@@ -47,7 +47,7 @@ export function JoinTeam({ propertyId, owner, requestError }: { propertyId: stri
     <div className="access-card"><span className="gate-icon">{pending && !owner ? <Clock3 size={22} /> : <LockKeyhole size={22} />}</span><p className="eyebrow">{owner ? 'OWNER WORKSPACE' : 'JOIN THE RECEPTION TEAM'}</p>
       <h1>{owner ? 'Owner access required.' : pending ? 'Over to the owner.' : declined ? 'Your request was declined.' : removed ? 'Your access has ended.' : 'A welcome starts here.'}</h1>
       <p>You’re signed in as <strong>{auth.user?.email}</strong>.</p>
-      {owner ? <p>Accept an owner invitation to open this dashboard. Reception access does not grant owner permissions.</p> : <>
+      {owner ? <p>Owner accounts are set up privately. Sign in with the email and password provided to you, or contact the hotel setup team if this account should have owner access.</p> : <>
         <ol className="approval-steps" aria-label="Reception access steps">
           <li className="complete"><span><Check size={14} /></span><div><strong>Sign in</strong><small>Your account is ready.</small></div></li>
           <li className={pending ? 'current' : ''}><span>2</span><div><strong>Owner approval</strong><small>{pending ? 'Request sent. Waiting for review.' : 'The owner reviews your request.'}</small></div></li>
@@ -58,13 +58,13 @@ export function JoinTeam({ propertyId, owner, requestError }: { propertyId: stri
         <div className="form-tabs"><button aria-pressed={mode === 'request'} disabled={busy} className={mode === 'request' ? 'active' : ''} onClick={() => setMode('request')}>{pending ? 'Request status' : 'Request access'}</button><button aria-pressed={mode === 'invitation'} disabled={busy} className={mode === 'invitation' ? 'active' : ''} onClick={() => setMode('invitation')}>Have an invitation?</button></div>
       </>}
       {!access && !loadError && <p role="status">Checking your access…</p>}
-      {(mode === 'invitation' || !pending) && <form className="account-form" onSubmit={submit} key={mode}>
+      {!owner && (mode === 'invitation' || !pending) && <form className="account-form" onSubmit={submit} key={mode}>
         {mode === 'invitation' ? <label>Invitation code<input name="code" required minLength={64} maxLength={64} autoComplete="off" disabled={busy} /></label> : <label>A note for the owner <span className="fine-print">(optional)</span><textarea name="introduction" minLength={10} maxLength={500} rows={3} disabled={busy} placeholder="Let the owner know who you are and when you’re joining." /></label>}
         <button className="button primary full-width" disabled={busy || !access || !!loadError}>{busy ? 'Please wait…' : mode === 'invitation' ? 'Accept invitation' : declined || removed ? 'Send a new request' : 'Request reception access'}</button>
       </form>}
       {(error || loadError) && <p className="form-error" role="alert">{error || loadError}</p>}
       <div className="access-actions"><button className="text-link" disabled={busy} onClick={() => setVersion(value => value + 1)}>Check access now</button><button className="text-link" disabled={busy} onClick={async () => { try { await auth.logout(); } catch { setError('Could not sign out. Please try again.'); } }}>Sign out</button>{owner && <a className="text-link" href={frontendUrl('reception')}>Open reception</a>}</div>
-      {owner && <div className="quiet-note"><strong>Setting up Pramod?</strong><p>The first owner is assigned by the person setting up the hotel. Further owners join by invitation.</p></div>}
+      {owner && <div className="quiet-note"><strong>Setting up Pramod?</strong><p>Owner accounts cannot be created or invited from this website. Contact the hotel setup team for your credentials.</p></div>}
     </div>
   </main>;
 }

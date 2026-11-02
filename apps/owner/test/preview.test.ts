@@ -27,6 +27,7 @@ test('sample data keeps checkout boundaries, role restrictions and invalid actio
   await assert.rejects(store.request(`${base}/bookings/PR-1049/check-in`, {}), /not eligible/);
   await assert.rejects(store.request(`${base}/staff/members/owner/revoke`, {}), /retain at least one owner/);
   await assert.rejects(store.request('/auth/login', {}), /not available/);
+  await assert.rejects(store.request(`${base}/staff/invitations`, { email: 'owner@example.test', role: 'owner' }), /Only receptionists/);
 });
 
 test('owner preview request notifications clear after review', async () => {

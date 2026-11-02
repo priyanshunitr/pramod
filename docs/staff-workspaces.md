@@ -4,7 +4,7 @@ The reception and owner apps remain independent React frontends in the Turborepo
 
 ## Reception
 
-1. Sign in with an approved receptionist or owner account. Accounts without membership can accept an invitation or request reception access.
+1. Sign in with an approved receptionist or owner account. Accounts without membership can accept a receptionist invitation or request reception access. Owner accounts are provisioned privately by the setup team; the owner website only offers sign-in.
 2. The front desk shows expected arrivals, departures due today or overdue, currently checked-in stays, and in-service rooms needing preparation.
 3. Open an arrivals/departures/in-house view, or search reservations by guest, email, room or reference.
 4. Open a reservation to review dates, guest count, assigned room and agreed value. Check-in appears only during an eligible stay; the API additionally verifies vacancy, room condition and permissions. Check-out marks the room dirty. Cancellation requires an explicit confirmation.

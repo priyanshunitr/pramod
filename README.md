@@ -60,7 +60,7 @@ The owner app requires an active owner membership and provides:
 
 Metric cards open their underlying rooms or reservations. Availability filters use inclusive arrival and exclusive departure dates, with a 1–30 night window. Current occupancy is separate from future reserved inventory. Booking value excludes cancellations, counts only nights in the selected window, and keeps currencies separate; it does not represent collected payments. See [the reporting contract](docs/owner-reporting.md) for exact definitions. Worker metrics and alerts are deferred.
 
-The customer experience is public. Account creation creates a customer account first; hotel staff permissions are added through an owner invitation or approval. There is no public role selector that grants staff access.
+The customer experience is public. Account creation creates a customer account first; reception permissions are added through owner approval or a receptionist invitation. Owner accounts are provisioned privately by the setup team. There is no public role selector that grants staff access.
 
 Search checks PostgreSQL inventory for the requested dates. Reservation confirmation recalculates the price and allocates a physical room in a transaction. The demo rates are stored in `room_types.nightly_rate_minor`, in paise for INR. The booking stores its agreed rate, currency, and room total; a changed price requires the customer to refresh and review it. No taxes, payment processing, or financial settlement is implemented.
 
@@ -127,7 +127,7 @@ Turborepo runs development tasks in parallel and caches builds, type checks, and
 | `npm run typecheck` | Check frontend, backend, and test TypeScript |
 | `npm test` | Run API, stay-date, and owner drilldown tests; no database needed |
 | `npm run test:integration` | Exercise the real API and PostgreSQL in an isolated temporary schema |
-| `npm run owner:bootstrap -- demo-hotel owner@example.com` | Assign the first owner to an already registered account |
+| `npm run owner:bootstrap -- demo-hotel owner@example.com "Owner Name"` | Create the first owner privately; prompts for a password |
 | `npm run build` | Compile the API and build all three frontends |
 | `npm run db:up` | Start PostgreSQL and wait for it to become healthy |
 | `npm run db:down` | Stop/remove the container while preserving database data |
@@ -178,11 +178,13 @@ Add future migrations as numbered SQL files under `apps/api/migrations`. The run
 
 ## First owner and staff access
 
-1. Start the app and create the intended owner's account at `/account?mode=register`.
-2. Verify the intended person's identity/email, then run `npm run owner:bootstrap -- demo-hotel their-email@example.com` from the repository root.
-3. Open http://127.0.0.1:5175 and sign in (or refresh access if already signed in). The owner dashboard's Hotel team page can approve receptionist requests or create invitations for receptionists/additional owners.
+1. From an interactive terminal in the repository root, run `npm run owner:bootstrap -- demo-hotel owner@example.com "Owner Name"` using the actual hotel slug, email, and name.
+2. Enter and confirm a 15–128 character password at the hidden prompts. The command creates the account and owner membership together; there is no prior website registration step. Passwords are hashed, never printed, and are not accepted as command arguments.
+3. Provide that email and password privately to the owner. They sign in at http://127.0.0.1:5175. The owner site has no account-creation or invitation-acceptance form. Its Hotel team page approves reception requests and creates receptionist invitations only.
 
-Bootstrap refuses to run once an active owner exists. Invitations expire after seven days, are bound to the invited account email, and can be accepted only once while the issuing owner retains access. The raw code is shown only when created; share it privately with the intended person. No email is sent automatically. There are no seeded accounts, default passwords, or public owner-registration endpoints.
+Bootstrap refuses to run once an active owner exists, and refuses an email that already belongs to any account without changing its password or permissions. It does not reset existing owner credentials. Existing owner memberships remain valid. Owner creation is an operator task with database access; public registration always creates a guest account. The API rejects attempts to create owner invitations and also rejects legacy owner invitation codes.
+
+Receptionist invitations expire after seven days, are bound to the invited account email, and can be accepted only once while the issuing owner retains access. The raw code is shown only when created; share it privately with the intended person. No email is sent automatically. There are no seeded accounts or default passwords.
 
 ### Reception approval flow
 
