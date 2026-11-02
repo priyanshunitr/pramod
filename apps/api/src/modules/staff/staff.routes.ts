@@ -104,7 +104,7 @@ staffRouter.post('/requests/:requestId/review', async (request, response) => {
 staffRouter.post('/invitations', async (request, response) => {
   const propertyId = propertyParam(request);
   const actorId = account(response).id;
-  const data = parse(z.object({ email, role: z.enum(['owner', 'receptionist']) }).strict(), request.body);
+  const data = parse(z.object({ email, role: z.literal('receptionist') }).strict(), request.body);
   await requireRole(propertyId, actorId, true);
   await rateLimit(`staff-invite:${actorId}`, 20, 3600);
   const invitationToken = token();
@@ -132,6 +132,8 @@ staffRouter.post('/invitations/accept', async (request, response) => {
     [propertyId, digest(code), user.email]);
     const invitation = result.rows[0];
     if (!invitation) throw new HttpError(400, 'This invitation is invalid, expired, already used, or belongs to another email.');
+    // Also block owner codes issued before owner provisioning became operator-only.
+    if (invitation.role !== 'receptionist') throw new HttpError(403, 'Owner accounts are provided by the hotel setup team.');
     await requireRole(propertyId, invitation.created_by, true, client);
     await client.query(`INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, $3)
       ON CONFLICT (property_id, user_id) DO UPDATE SET active = true,

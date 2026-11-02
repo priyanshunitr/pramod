@@ -142,7 +142,7 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await pool.query("SELECT count(*)::int AS count FROM audit_events WHERE action = 'staff.request.created' AND subject_id = $1", [requestId])).rows[0].count, 1);
     // The original JWT gains access through the approved database membership.
     assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 200);
-    assert.equal((await call(`${staffPath}/invitations`, { email: customer.email, role: 'owner' }, receptionist.cookie)).status, 403);
+    assert.equal((await call(`${staffPath}/invitations`, { email: customer.email, role: 'receptionist' }, receptionist.cookie)).status, 403);
   });
 
   await t.test('declines and revocations require deliberate resubmission, never a login retry', async () => {
@@ -174,7 +174,14 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
   });
 
   await t.test('invitations are email-bound, expiring, and single-use; the final owner is protected', async () => {
-    const invitation = await call(`${staffPath}/invitations`, { email: customer.email, role: 'owner' }, owner.cookie);
+    assert.equal((await call(`${staffPath}/invitations`, { email: customer.email, role: 'owner' }, owner.cookie)).status, 400);
+    const legacyCode = randomBytes(32).toString('hex');
+    await pool.query(`INSERT INTO staff_invitations(property_id, email, role, token_hash, created_by, expires_at)
+      VALUES ($1, $2, 'owner', $3, $4, now() + interval '1 day')`, [hotel, customer.email, digest(legacyCode), owner.id]);
+    assert.equal((await call(`${staffPath}/invitations/accept`, { code: legacyCode }, customer.cookie)).status, 403);
+    assert.equal((await call(`${staffPath}/access`, undefined, customer.cookie)).payload.data.role, null);
+    assert.equal((await pool.query('SELECT accepted_at FROM staff_invitations WHERE token_hash = $1', [digest(legacyCode)])).rows[0].accepted_at, null);
+    const invitation = await call(`${staffPath}/invitations`, { email: customer.email, role: 'receptionist' }, owner.cookie);
     assert.equal(invitation.status, 201);
     const code = invitation.payload.data.token as string;
     assert.equal((await call(`${staffPath}/invitations/accept`, { code }, outsider.cookie)).status, 400);
@@ -182,7 +189,10 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(`${staffPath}/invitations/accept`, { code }, customer.cookie)).status, 400);
     await pool.query("UPDATE staff_invitations SET expires_at = now() + interval '1 day' WHERE token_hash = $1", [digest(code)]);
     assert.equal((await call(`${staffPath}/invitations/accept`, { code }, customer.cookie)).status, 200);
+    assert.equal((await call(`${staffPath}/access`, undefined, customer.cookie)).payload.data.role, 'receptionist');
     assert.equal((await call(`${staffPath}/invitations/accept`, { code }, customer.cookie)).status, 400);
+    // Simulate a previously provisioned owner; no website route can grant this role.
+    await pool.query("UPDATE staff_memberships SET role = 'owner' WHERE property_id = $1 AND user_id = $2", [hotel, customer.id]);
     assert.equal((await call(`${staffPath}/members/${customer.id}/revoke`, {}, owner.cookie)).status, 200);
     assert.equal((await call(`${staffPath}/team`, undefined, customer.cookie)).status, 403);
     assert.equal((await call(`${staffPath}/members/${owner.id}/revoke`, {}, owner.cookie)).status, 409);
@@ -193,6 +203,28 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(`${staffPath}/requests/${request.payload.data.request.id}/review`, { decision: 'approved' }, owner.cookie)).status, 200);
     assert.equal((await call(`${staffPath}/access`, undefined, customer.cookie)).payload.data.role, 'receptionist');
     await call(`${staffPath}/members/${customer.id}/revoke`, {}, owner.cookie);
+  });
+
+  await t.test('operator provisioning creates the first owner without public registration and never overwrites accounts', async () => {
+    const { provisionOwner } = await import('../src/db/provision-owner.js');
+    const property = (await pool.query("INSERT INTO properties(slug, name) VALUES ('provisioned-hotel', 'Provisioned Hotel') RETURNING id")).rows[0].id;
+    const data = { slug: 'provisioned-hotel', email: 'Provided.Owner@example.test', fullName: 'Provided Owner', password };
+    await assert.rejects(provisionOwner({ ...data, password: 'short' }), /at least 15/);
+    const created = await provisionOwner(data);
+    assert.equal(created.propertyId, property);
+    const login = await call('/auth/login', { email: data.email, password });
+    assert.equal(login.status, 200);
+    const session = (await call('/auth/me', undefined, login.cookie)).payload.data;
+    assert.equal(session.user.fullName, data.fullName);
+    assert.deepEqual(session.memberships.map((m: { propertyId: string; role: string }) => [m.propertyId, m.role]), [[property, 'owner']]);
+    await assert.rejects(provisionOwner({ ...data, email: 'second-owner@example.test' }), /owner already exists/);
+    assert.equal((await pool.query("SELECT 1 FROM users WHERE email = 'second-owner@example.test'")).rowCount, 0);
+    const unchanged = (await pool.query('SELECT password_hash FROM users WHERE id = $1', [customer.id])).rows[0].password_hash;
+    const emptyHotel = (await pool.query("INSERT INTO properties(slug, name) VALUES ('collision-hotel', 'Collision Hotel') RETURNING id")).rows[0].id;
+    await assert.rejects(provisionOwner({ ...data, slug: 'collision-hotel', email: customer.email }), /already has an account/);
+    assert.equal((await pool.query('SELECT 1 FROM staff_memberships WHERE property_id = $1', [emptyHotel])).rowCount, 0);
+    assert.equal((await pool.query('SELECT password_hash FROM users WHERE id = $1', [customer.id])).rows[0].password_hash, unchanged);
+    assert.equal((await pool.query("SELECT 1 FROM audit_events WHERE action = 'owner.provisioned' AND subject_id = $1", [created.userId])).rowCount, 1);
   });
 
   await t.test('calendar dates, capacity, ownership fields, and server prices are validated', async () => {
