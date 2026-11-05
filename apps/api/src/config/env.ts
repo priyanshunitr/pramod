@@ -15,6 +15,7 @@ const result = z.object({
   JWT_ISSUER: z.string().min(1).default('pramod-api'),
   JWT_AUDIENCE: z.string().min(1).default('pramod-web'),
   JWT_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  DEEPGRAM_API_KEY: z.string().trim().optional(),
   DATABASE_URL: z.url().refine((value) => /^postgres(ql)?:\/\//.test(value), {
     message: 'Use a PostgreSQL connection URL.',
   }),

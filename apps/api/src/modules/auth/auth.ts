@@ -22,7 +22,7 @@ export function signOut(response: Response): void {
   response.clearCookie(legacyCookieName, cookieOptions);
 }
 
-export async function authenticate(request: Request): Promise<Identity | null> {
+export async function authenticate(request: Pick<Request, 'headers'>): Promise<Identity | null> {
   const cookies = request.headers.cookie?.split(';').map(part => part.trim())
     .filter(part => part.startsWith(`${cookieName}=`));
   // Reject ambiguous duplicate credentials as well as missing cookies.

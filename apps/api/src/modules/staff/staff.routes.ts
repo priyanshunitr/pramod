@@ -7,9 +7,16 @@ import { account, requireUser } from '../auth/auth.js';
 import { digest, rateLimit, token } from '../auth/security.js';
 import { audit, lockProperty, requireRole } from './permissions.js';
 import { readStaffAccess } from './access.js';
+import { env } from '../../config/env.js';
 
 export const staffRouter = Router({ mergeParams: true });
 staffRouter.use(requireUser);
+
+staffRouter.get('/speech/status', async (request, response) => {
+  await requireRole(propertyParam(request), account(response).id);
+  if (!env.DEEPGRAM_API_KEY) throw new HttpError(503, 'Speech to text is not configured. Contact the hotel setup team.');
+  response.json({ data: { configured: true } });
+});
 
 staffRouter.get('/rooms', async (request, response) => {
   const propertyId = propertyParam(request);

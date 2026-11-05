@@ -8,7 +8,7 @@ export function hotelViteConfig(port: number) {
   const envPath = new URL('../../../.env', import.meta.url);
   const settings = existsSync(envPath) ? parse(readFileSync(envPath)) : {};
   const apiPort = process.env.API_PORT ?? settings.API_PORT ?? '4000';
-  const proxy = { '/api': { target: `http://127.0.0.1:${apiPort}` } };
+  const proxy = { '/api': { target: `http://127.0.0.1:${apiPort}`, ws: true } };
   const publicKeys = ['VITE_GUEST_URL', 'VITE_RECEPTION_URL', 'VITE_OWNER_URL', 'VITE_PROPERTY_SLUG'];
   return defineConfig({
     plugins: [react()],
