@@ -18,3 +18,18 @@
 .availability-total strong { color: #435337; font-weight: 500; }
 @media (max-width:1100px) { .availability-form { flex-wrap: wrap; } .availability-form .button { margin-left: auto; } .availability-cards { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .availability-form { gap: 23px 15px; } .availability-form label { flex-basis: calc(50% - 15px); } .availability-form .button { width: 100%; } .availability-cards { grid-template-columns: 1fr; } .availability-card-top { height: 210px; } }
+
+.reservation-search { width: min(100%, 390px); min-width: 0; }
+.reservation-search .voice-search { width: 100%; padding: 6px 7px 6px 13px; gap: 9px; border: 1px solid var(--line); border-radius: 25px; background: #fffefb; }
+.voice-search input { width: 100%; min-width: 0; flex: 1; font-size: 12px; }
+.voice-search.is-listening { border-color: #7f9369; background: #f0f4e9; }
+.voice-button, .voice-clear { display: grid; place-items: center; flex-shrink: 0; border: 0; border-radius: 50%; cursor: pointer; }
+.voice-button { width: 34px; height: 34px; background: #243023; color: #f8faef; }
+.voice-button[aria-pressed="true"] { background: #8e4434; }
+.voice-clear { width: 24px; height: 28px; background: transparent; color: var(--muted); }
+.speech-help { min-height: 28px; font-size: 10px; line-height: 1.5; margin: 7px 6px 0; color: var(--muted); }
+.speech-error { font-size: 11px; line-height: 1.5; margin: 6px; color: #9b3d2e; }
+.desk-search { padding: 0 24px 10px; }
+.desk-search .reservation-search { width: 100%; }
+.section-toolbar:has(.reservation-search) { align-items: flex-start; gap: 18px; }
+@media (max-width:760px) { .reservation-search { width: 100%; } .desk-search { padding-inline: 18px; } }

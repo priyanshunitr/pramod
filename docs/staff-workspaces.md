@@ -13,6 +13,18 @@ The reception and owner apps remain independent React frontends in the Turborepo
 
 Reception uses the existing latest-100 reservation endpoint. If that limit is reached, the UI explicitly scopes totals to the loaded list. Owner reports do not have this list limit.
 
+### Speech in reservation search
+
+The microphone beside reservation search (on the front desk and Reservations pages) fills the field as you speak. Say a guest name, email, room number, or reservation reference. Stop recording to edit the text normally. Speech replaces the current query after the first recognized words; failure before recognition preserves the previous query. Search respects the selected reservation view and the latest-100 list. It does not create or change a reservation.
+
+Set `DEEPGRAM_API_KEY` in the ignored root `.env` and run the API as well as the reception frontend. Keep the key server-only; never use a `VITE_` variable. The browser asks for microphone permission after a click and streams audio through the authenticated API WebSocket. Express connects to Deepgram with the private key, forwards interim/final text, and handles provider billing/credential failures. Deepgram billing or credits must be active. The configured Nova-3 multilingual model auto-detects speech, including English and Hindi; see the [Deepgram language documentation](https://developers.deepgram.com/docs/nova-3-language-prompting).
+
+The microphone stops on Stop, navigation, hidden tab, permission/device failure, connection failure, or the two-minute limit. An unfinished microphone prompt can be cancelled. Final recorder bytes are sent before the server asks Deepgram to [close the stream and flush remaining words](https://developers.deepgram.com/docs/close-stream). Audio and search text are not saved by Pramod. Audio is processed by Deepgram while recording; its data handling terms apply. Sample previews disable speech and never contact Deepgram.
+
+`GET /api/properties/:propertyId/staff/speech/status` checks active staff access and server configuration. The WebSocket URL is `/api/properties/:propertyId/staff/speech`; it validates the exact allowed Origin, signed JWT cookie, and current property membership before connecting to Deepgram. It rechecks membership every 15 seconds, closes at JWT expiry, limits connection starts to 10 per account per 15 minutes, and allows one active stream per user per API process. Recordings are capped at two minutes and 8 MiB, with bounded messages, backpressure, and dead-client cleanup. These socket connections are transient audio streams, not authentication session records. Multi-instance deployment would need a shared concurrent-stream limit.
+
+Vite proxies WebSocket upgrades alongside `/api` HTTP requests. Production reverse proxies must also forward WebSocket Upgrade/Connection headers and the original Origin and cookie; use HTTPS/WSS. Browser microphone capture requires HTTPS or localhost. Production idle timeouts must accommodate the live stream and final transcription. Tests use a local provider fixture and synthetic audio to verify authentication, revocation, final-word flushing, provider errors, and microphone cleanup without consuming Deepgram credits.
+
 ## Owner
 
 1. Sign in with an active owner membership. Reception access alone cannot open the live owner workspace.
@@ -38,7 +50,7 @@ The reception's illustrative room images reuse the existing guest assets. Attrib
 
 ## Verification
 
-- All four application builds and the full 29-test suite pass, including API JWT checks, guest stay validation, owner drilldowns, reception date scopes and isolated sample transitions.
+- All four application builds, workspace type checks, and the full 41-test suite pass, including API JWT checks, speech proxy access controls, capture cleanup, guest stay validation, owner drilldowns, reception date scopes and isolated sample transitions.
 - Browser checks cover sample check-in/check-out, dirty-to-clean housekeeping, capacity filtering, calendar-to-reservation drilldowns, cancellation confirmation and staff-request approval.
 - Desktop and 390px mobile layouts include collapsible navigation, horizontally scrollable data tables, native modal focus containment and reduced-motion support.
 - Real authenticated writes were not exercised in this frontend pass: the API and PostgreSQL were not running. Existing API contracts and authorization are retained.
