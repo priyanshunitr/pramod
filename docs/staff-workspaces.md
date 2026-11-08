@@ -30,6 +30,7 @@ Vite proxies WebSocket upgrades alongside `/api` HTTP requests. Production rever
 1. Sign in with an active owner membership. Reception access alone cannot open the live owner workspace.
 2. Choose a 1–30-night reporting window and room type. The overview shows current occupancy, availability across the selected stay, scheduled booking value, reservation counts, a nightly outlook and current room readiness.
 3. Metric links open the underlying rooms or reservations while retaining the selected dates/type.
+   The overview also includes a monthly rooms-booked bar chart. Select any month and hover, focus, or tap a day to see its booked room numbers; the room-type filter applies here too.
 4. Room availability includes a nightly calendar. Select a reserved cell to find its reservation; room rows also show current occupancy and housekeeping separately.
 5. Use the shared reservation and readiness screens for operational tasks.
 6. Review staff access requests, create email-bound invitations and revoke access. The API protects the last active owner. Invitations show a copyable code; no email is sent automatically.
@@ -50,7 +51,7 @@ The reception's illustrative room images reuse the existing guest assets. Attrib
 
 ## Verification
 
-- All four application builds, workspace type checks, and the full 41-test suite pass, including API JWT checks, speech proxy access controls, capture cleanup, guest stay validation, owner drilldowns, reception date scopes and isolated sample transitions.
+- All four application builds, workspace type checks, and the full 42-test suite pass, including API JWT checks, speech proxy access controls, capture cleanup, guest stay validation, owner drilldowns, monthly booked-room previews, reception date scopes and isolated sample transitions.
 - Browser checks cover sample check-in/check-out, dirty-to-clean housekeeping, capacity filtering, calendar-to-reservation drilldowns, cancellation confirmation and staff-request approval.
 - Desktop and 390px mobile layouts include collapsible navigation, horizontally scrollable data tables, native modal focus containment and reduced-motion support.
 - Real authenticated writes were not exercised in this frontend pass: the API and PostgreSQL were not running. Existing API contracts and authorization are retained.

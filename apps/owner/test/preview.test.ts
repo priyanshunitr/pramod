@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { OwnerDashboard, StaffNotifications } from '@hotel/contracts';
+import type { OwnerBookedRooms, OwnerDashboard, StaffNotifications } from '@hotel/contracts';
 import { createPreviewStore } from '../../../packages/ui/src/preview.ts';
 
 test('sample workspace mutations update reports and room readiness without network access', async () => {
@@ -40,4 +40,22 @@ test('owner preview request notifications clear after review', async () => {
     const team = await store.request<{ members: { email: string }[] }>(`${base}/team`);
     assert.equal(team.members.some(member => member.email === 'aditi@example.test'), decision === 'approved');
   }
+});
+
+test('monthly preview includes completed stays, excludes checkout and cancellations, and returns complete months', async () => {
+  const store = createPreviewStore('2024-03-01');
+  const base = `/properties/${store.property.id}/owner/booked-rooms`;
+  const february = await store.request<OwnerBookedRooms>(`${base}?month=2024-02`);
+  assert.equal(february.days.length, 29);
+  assert.ok(february.days[28]!.roomNumbers.includes('106'), 'completed stay remains in historical counts');
+  assert.ok(february.days.every(day => day.bookedRooms === new Set(day.roomNumbers).size));
+  const march = await store.request<OwnerBookedRooms>(`${base}?month=2024-03`);
+  assert.equal(march.days.length, 31);
+  assert.ok(!march.days[0]!.roomNumbers.includes('106'), 'checkout date is not a booked night');
+  assert.ok(march.days.every(day => !day.roomNumbers.includes('304')), 'cancelled stay is excluded');
+  const suites = await store.request<OwnerBookedRooms>(`${base}?month=2024-03&roomTypeId=suite`);
+  assert.ok(suites.days.every(day => day.roomNumbers.every(number => number.startsWith('3'))));
+  const empty = await store.request<OwnerBookedRooms>(`${base}?month=2025-02`);
+  assert.equal(empty.days.length, 28); assert.ok(empty.days.every(day => day.bookedRooms === 0));
+  await assert.rejects(store.request(`${base}?month=2024-13`), /valid month/);
 });

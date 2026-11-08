@@ -5,6 +5,7 @@ import { ApiError, type OwnerDashboard, type OwnerRoom, type PropertyCatalog } f
 import { addDays, StaffReservations, formatMoney, prettyDate, todayAtHotel, useWorkspace } from '@hotel/ui';
 import { selectBookings } from './filters';
 import { RoomCalendar } from './RoomCalendar';
+import { MonthlyBookingsChart } from './MonthlyBookingsChart';
 
 type View = 'overview' | 'availability' | 'reservations';
 const labels = { available: 'Available', reserved: 'Reserved', out_of_service: 'Out of service', clean: 'Clean', dirty: 'Needs cleaning', cleaning: 'Cleaning' };
@@ -54,12 +55,14 @@ function Metric({ label, value, note, icon, href }: { label: string; value: Reac
 }
 
 function Overview({ report, path, onDay }: { report: OwnerDashboard; path: (route: string, extra?: Record<string, string>) => string; onDay: (date: string) => void }) {
+  const [params] = useSearchParams();
   const { summary } = report;
   const value = summary.bookingValueByCurrency.length ? summary.bookingValueByCurrency.map(item => <span key={item.currency}>{formatMoney(item.amountMinor / 100, item.currency)}</span>) : formatMoney(0, report.property.currency);
   return <>
     <div className="metrics-grid"><Metric label="Occupancy right now" value={summary.occupancyPercent === null ? '—' : <>{summary.occupancyPercent}<small>%</small></>} note={`${summary.occupiedInServiceRooms} of ${summary.inServiceRooms} in-service rooms occupied`} icon={<BedDouble size={17} />} href={path('/reservations', { scope: 'inhouse' })} /><Metric label="Rooms available" value={<>{summary.availableRooms}<small> / {summary.totalRooms}</small></>} note="Available for your entire stay window" icon={<DoorOpen size={17} />} href={path('/availability', { status: 'available' })} /><Metric label="Booking value" value={<span className="money-values">{value}</span>} note="Selected nights · agreed value, not collected revenue" icon={<Wallet size={17} />} href={path('/reservations', { scope: 'value' })} /><Metric label="Reservations" value={summary.reservations} note={`${summary.cancelled} cancelled · selected stay window`} icon={<CalendarDays size={17} />} href={path('/reservations')} /></div>
     <div className="today-strip"><div><span className="today-mark"><Clock3 size={18} /></span><div><strong>Today at Pramod</strong><small>{prettyDate(report.today)} · hotel local time</small></div></div><Link to={path('/reservations', { scope: 'arrivals' })}><ArrowDownLeft size={17} /><strong>{summary.arrivalsToday}</strong><span>scheduled arrivals</span><ChevronRight size={14} /></Link><Link to={path('/reservations', { scope: 'departures' })}><ArrowUpRight size={17} /><strong>{summary.departuresToday}</strong><span>scheduled departures</span><ChevronRight size={14} /></Link><Link to="/readiness"><Sparkles size={17} /><strong>{summary.readiness.dirty + summary.readiness.cleaning}</strong><span>rooms to prepare</span><ChevronRight size={14} /></Link></div>
     <div className="overview-middle"><Outlook report={report} onDay={onDay} /><section className="report-panel readiness-panel"><div className="panel-heading"><div><p className="eyebrow">READY FOR A WARM WELCOME</p><h2>Room readiness</h2></div><Sparkles size={19} /></div><div className="readiness-total"><strong>{summary.readiness.clean}</strong><span>clean rooms<br /><small>of {summary.inServiceRooms} in service</small></span></div><div className="readiness-meter" aria-label={`${summary.readiness.clean} clean, ${summary.readiness.dirty} dirty, ${summary.readiness.cleaning} cleaning`}>{(['clean', 'dirty', 'cleaning'] as const).map(status => <span key={status} className={status} style={{ flexGrow: summary.readiness[status] }} />)}</div><div className="readiness-legend">{(['clean', 'dirty', 'cleaning'] as const).map(status => <Link to="/readiness" key={status}><span className={`legend-dot ${status}`} />{labels[status]}<strong>{summary.readiness[status]}</strong></Link>)}</div><div className="readiness-footer"><span>{summary.outOfServiceRooms} out of service</span><Link to="/readiness">Manage rooms <ArrowUpRight size={14} /></Link></div></section></div>
+    <MonthlyBookingsChart roomTypeId={params.get('roomTypeId') || ''} />
     <RoomInventory report={report} path={path} preview />
     <p className="report-footnote"><CircleCheck size={13} />Figures come from hotel reservations and room records. Booking value is the agreed value of selected nights; it is not payment revenue.</p>
   </>;

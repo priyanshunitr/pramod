@@ -1,4 +1,4 @@
-import type { Booking, OwnerBooking, OwnerDashboard, OwnerRoom, PropertyCatalog } from '@hotel/contracts';
+import type { Booking, OwnerBooking, OwnerBookedRooms, OwnerDashboard, OwnerRoom, PropertyCatalog } from '@hotel/contracts';
 import type { api } from '@hotel/api-client';
 import { addDays, todayAtHotel } from './format.ts';
 
@@ -67,6 +67,17 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
     let result: unknown;
     if (route === '/owner/dashboard' && body === undefined) {
       result = report(url.searchParams.get('from') || today, url.searchParams.get('to') || addDays(today, 7), url.searchParams.get('roomTypeId') || '');
+    } else if (route === '/owner/booked-rooms' && body === undefined) {
+      const month = url.searchParams.get('month') ?? '';
+      if (!/^[1-9]\d{3}-(0[1-9]|1[0-2])$/.test(month) || Number(month.slice(0, 4)) >= 9999) throw new Error('Choose a valid month.');
+      const roomTypeId = url.searchParams.get('roomTypeId');
+      if (roomTypeId && !property.roomTypes.some(type => type.id === roomTypeId)) throw new Error('Room type not found for this hotel.');
+      const count = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).getUTCDate();
+      result = { month, timezone: property.timezone, roomTypeId, days: Array.from({ length: count }, (_, i) => {
+        const date = `${month}-${String(i + 1).padStart(2, '0')}`;
+        const booked = rooms.filter(room => (!roomTypeId || room.roomTypeId === roomTypeId) && bookings.some(booking => booking.roomId === room.id && booking.status !== 'cancelled' && booking.checkIn <= date && booking.checkOut > date));
+        return { date, bookedRooms: booked.length, roomNumbers: booked.map(room => room.number).sort() };
+      }) } satisfies OwnerBookedRooms;
     } else if (route === '/bookings' && body === undefined) result = bookings;
     else if (route === '/staff/rooms' && body === undefined) result = rooms;
     else if (route === '/staff/notifications' && body === undefined) result = { pendingCount: requests.length };

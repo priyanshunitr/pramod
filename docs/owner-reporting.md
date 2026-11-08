@@ -17,4 +17,12 @@ Optional parameters: `from` (inclusive), `to` (exclusive), and `roomTypeId`. Dat
 
 Room rows expose current occupancy and housekeeping separately from future allocation. Date ranges are half-open: a checkout on a date allows a new check-in on that date. Cancelled and checked-out allocations no longer block availability. Reservations in the response cover the selected window, today's arrivals/departures, and current checked-in stays so every metric can link to its underlying records without the reception list's 100-row limit.
 
-Worker queue metrics, delivery alerts, historical occupancy, payments, and financial settlement are outside this version. No migration is needed: reports derive from existing reservations, allocations, rooms, and staff memberships.
+## Monthly booked rooms
+
+`GET /api/properties/:propertyId/owner/booked-rooms?month=YYYY-MM` provides a full calendar month, including zero-booking days. Past and future months are supported independently of the dashboard's 1–30-night stay window. Optional `roomTypeId` applies the selected room-type filter; it must belong to the hotel. The endpoint requires current owner membership and uses a read-only, repeatable-read transaction with `Cache-Control: no-store`.
+
+Each day returns `date`, `bookedRooms`, and `roomNumbers`. A physical room counts once for each night within the original `[check_in, check_out)` stay dates. Cancelled bookings are excluded. Completed stays remain counted after checkout deactivates their allocation; a room's current maintenance status does not erase its history. The report contains room numbers, not guest names or contact details.
+
+The owner overview displays one bar per day with a separate month selector. Hover, keyboard focus, or tap shows the date, total, and room numbers. Escape dismisses the details. Long months scroll horizontally on smaller screens. The month is retained in the URL, while the room-type filter applies to the chart. The summary adds daily counts as **room nights**, not unique reservations.
+
+This measures the booked stay schedule, not the date a reservation was created or actual historical occupancy. Early checkout does not rewrite the original agreed stay. Worker queue metrics, delivery alerts, actual historical occupancy, payments, and financial settlement remain outside this version. No migration is needed: reports derive from existing reservations, allocations, rooms, and staff memberships.
