@@ -33,6 +33,10 @@ export interface Availability {
 }
 
 export interface OwnerBooking extends Booking { roomId: string; allocationActive: boolean; }
+export interface OwnerBookedRooms {
+  month: string; timezone: string; roomTypeId: string | null;
+  days: { date: string; bookedRooms: number; roomNumbers: string[] }[];
+}
 export interface OwnerRoom {
   id: string; number: string; roomTypeId: string; roomTypeName: string;
   housekeepingStatus: 'clean' | 'dirty' | 'cleaning';

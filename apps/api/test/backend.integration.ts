@@ -359,6 +359,59 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(path, undefined, owner.cookie)).status, 403, 'a valid JWT cannot bypass revoked owner access');
   });
 
+  await t.test('monthly room chart counts distinct booked nights, preserves history, and enforces owner access', async () => {
+    const chartHotel = (await pool.query<{ id: string }>("INSERT INTO properties(slug, name) VALUES ('monthly-chart-hotel', 'Monthly Chart Hotel') RETURNING id")).rows[0]!.id;
+    await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [chartHotel, owner.id, receptionist.id]);
+    const types = (await pool.query<{ id: string }>("INSERT INTO room_types(property_id, name, max_guests, nightly_rate_minor) VALUES ($1, 'Classic', 2, 100), ($1, 'Suite', 2, 200) RETURNING id", [chartHotel])).rows;
+    const rooms = (await pool.query<{ id: string; room_type_id: string }>(`INSERT INTO rooms(property_id, room_type_id, number, operational_status)
+      VALUES ($1, $2, '101', 'active'), ($1, $3, '102', 'active'), ($1, $3, '103', 'out_of_service') RETURNING id, room_type_id`, [chartHotel, types[0]!.id, types[1]!.id])).rows;
+    async function booked(index: number, from: string, to: string, status = 'checked_out') {
+      const id = randomUUID(); const assigned = rooms[index]!;
+      await pool.query(`INSERT INTO bookings(id, property_id, customer_id, room_type_id, check_in, check_out, guests, status, nightly_rate_minor, total_minor, currency, idempotency_key, request_hash)
+        VALUES ($1,$2,$3,$4,$5,$6,1,$7,100,($6::date-$5::date)*100,'INR',$8,'monthly-test')`, [id, chartHotel, customer.id, assigned.room_type_id, from, to, status, randomUUID()]);
+      await pool.query('INSERT INTO booking_rooms(booking_id, property_id, room_id, check_in, check_out, active) VALUES ($1,$2,$3,$4,$5,$6)', [id, chartHotel, assigned.id, from, to, status === 'confirmed']);
+    }
+    await booked(0, '2024-01-31', '2024-02-02');
+    await booked(0, '2024-02-01', '2024-02-02'); // Same physical room must count once.
+    await booked(0, '2024-01-29', '2024-02-01'); // Checkout day is excluded.
+    await booked(1, '2024-02-01', '2024-02-03', 'confirmed');
+    await booked(2, '2024-02-02', '2024-02-03'); // Current room status cannot erase history.
+    await booked(1, '2024-02-04', '2024-02-06', 'cancelled');
+    await booked(0, '2024-02-28', '2024-03-02');
+    await booked(0, '2023-12-31', '2024-01-02');
+    const path = `/properties/${chartHotel}/owner/booked-rooms`;
+    assert.equal((await call(`${path}?month=2024-02`)).status, 401);
+    for (const user of [customer, receptionist, outsider]) assert.equal((await call(`${path}?month=2024-02`, undefined, user.cookie)).status, 403);
+    for (const query of ['', '?month=2024-13', '?month=2024-2', '?month=2024-02-01', '?month=0000-01', '?month=9999-12', '?month=2024-02&extra=1', '?month=2024-02&month=2024-03']) {
+      assert.equal((await call(path + query, undefined, owner.cookie)).status, 400);
+    }
+    assert.equal((await call(`${path}?month=2024-02&roomTypeId=${roomType}`, undefined, owner.cookie)).status, 404);
+    const result = await call(`${path}?month=2024-02`, undefined, owner.cookie);
+    assert.equal(result.status, 200, JSON.stringify(result.payload));
+    assert.equal(result.headers.get('cache-control'), 'no-store');
+    const days = result.payload.data.days;
+    assert.equal(days.length, 29);
+    assert.deepEqual(days[0], { date: '2024-02-01', bookedRooms: 2, roomNumbers: ['101', '102'] });
+    assert.deepEqual(days[1], { date: '2024-02-02', bookedRooms: 2, roomNumbers: ['102', '103'] });
+    assert.ok(days.slice(2, 27).every((day: any) => day.bookedRooms === 0 && day.roomNumbers.length === 0));
+    assert.deepEqual(days[28], { date: '2024-02-29', bookedRooms: 1, roomNumbers: ['101'] });
+    assert.ok(days.every((day: any) => day.bookedRooms === day.roomNumbers.length));
+    assert.equal(JSON.stringify(result.payload).includes(customer.email), false, 'chart does not expose guest details');
+    const filtered = await call(`${path}?month=2024-02&roomTypeId=${types[0]!.id}`, undefined, owner.cookie);
+    assert.deepEqual(filtered.payload.data.days[0].roomNumbers, ['101']);
+    assert.equal(filtered.payload.data.days[1].bookedRooms, 0);
+    const march = await call(`${path}?month=2024-03`, undefined, owner.cookie);
+    assert.equal(march.payload.data.days.length, 31); assert.equal(march.payload.data.days[0].bookedRooms, 1); assert.equal(march.payload.data.days[1].bookedRooms, 0);
+    const december = await call(`${path}?month=2023-12`, undefined, owner.cookie);
+    assert.equal(december.payload.data.days.length, 31); assert.equal(december.payload.data.days[30].bookedRooms, 1);
+    const noLeap = await call(`${path}?month=2025-02`, undefined, owner.cookie);
+    assert.equal(noLeap.payload.data.days.length, 28); assert.ok(noLeap.payload.data.days.every((day: any) => day.bookedRooms === 0));
+    const emptyHotel = await call(`/properties/${otherHotel}/owner/booked-rooms?month=2024-02`, undefined, outsider.cookie);
+    assert.ok(emptyHotel.payload.data.days.every((day: any) => day.bookedRooms === 0), 'other hotel cannot leak reservations');
+    await pool.query('UPDATE staff_memberships SET active = false WHERE property_id = $1 AND user_id = $2', [chartHotel, owner.id]);
+    assert.equal((await call(`${path}?month=2024-02`, undefined, owner.cookie)).status, 403);
+  });
+
   await t.test('logout clears cookies; copied JWTs remain valid until expiry; invalid tokens are rejected', async () => {
     const login = await call('/auth/login', { email: customer.email, password });
     assert.equal(login.status, 200);

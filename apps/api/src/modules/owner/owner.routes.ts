@@ -4,9 +4,13 @@ import { parse, propertyParam, uuid } from '../../lib/http.js';
 import { account, requireUser } from '../auth/auth.js';
 import { dateValue } from '../bookings/stay.js';
 import { ownerDashboard } from './owner.repository.js';
+import { monthlyBookedRooms } from './monthly-rooms.js';
 
 export const ownerRouter = Router({ mergeParams: true });
 ownerRouter.use(requireUser);
+ownerRouter.get('/booked-rooms', async (request, response) => {
+  response.json({ data: await monthlyBookedRooms(propertyParam(request), account(response).id, request.query) });
+});
 ownerRouter.get('/dashboard', async (request, response) => {
   const query = parse(z.object({ from: dateValue.optional(), to: dateValue.optional(), roomTypeId: uuid.optional() }).strict(), request.query);
   response.json({ data: await ownerDashboard(propertyParam(request), account(response).id, query) });
