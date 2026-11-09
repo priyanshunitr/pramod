@@ -39,7 +39,6 @@ export interface OwnerBookedRooms {
 }
 export interface OwnerRoom {
   id: string; number: string; roomTypeId: string; roomTypeName: string;
-  housekeepingStatus: 'clean' | 'dirty' | 'cleaning';
   operationalStatus: 'active' | 'out_of_service';
   occupied: boolean;
   status: 'available' | 'reserved' | 'out_of_service';
@@ -56,7 +55,6 @@ export interface OwnerDashboard {
     arrivalsToday: number; departuresToday: number;
     reservations: number; confirmed: number; checkedIn: number; checkedOut: number; cancelled: number;
     bookingValueByCurrency: { currency: string; amountMinor: number }[];
-    readiness: { clean: number; dirty: number; cleaning: number };
   };
   daily: { date: string; reservedRooms: number; availableRooms: number; outOfServiceRooms: number }[];
   rooms: OwnerRoom[];

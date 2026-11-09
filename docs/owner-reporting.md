@@ -8,14 +8,13 @@ Optional parameters: `from` (inclusive), `to` (exclusive), and `roomTypeId`. Dat
 | --- | --- |
 | Current occupancy | Distinct in-service rooms with a currently checked-in booking / all in-service rooms. Null if there are no in-service rooms. It is independent of the selected future dates. |
 | Occupied rooms | All rooms with a checked-in booking, including overdue departures. An out-of-service occupied room is still visible, but excluded from the occupancy denominator and numerator. |
-| Available rooms | In-service rooms with no active allocation overlapping any night in the selected window. Housekeeping readiness is a separate current state. |
+| Available rooms | In-service rooms with no active allocation overlapping any night in the selected window. |
 | Daily outlook | Reserved and available in-service rooms for each night. Out-of-service rooms are listed separately. This is the current reservation schedule, not historical actual occupancy. |
 | Arrivals / departures today | Noncancelled stays scheduled to begin / end today in the hotel's timezone, including already completed arrivals / departures. |
 | Reservations | All stays overlapping the selected window, with a status breakdown including cancellations. |
 | Booking value | Agreed nightly rate × reserved nights intersecting the window, for noncancelled bookings. Values are grouped by currency, never combined across currencies. This is scheduled booking value, not payments collected or recognized revenue. An early checkout does not rewrite the original agreed stay. |
-| Room readiness | Current clean / dirty / cleaning counts for in-service rooms. |
 
-Room rows expose current occupancy and housekeeping separately from future allocation. Date ranges are half-open: a checkout on a date allows a new check-in on that date. Cancelled and checked-out allocations no longer block availability. Reservations in the response cover the selected window, today's arrivals/departures, and current checked-in stays so every metric can link to its underlying records without the reception list's 100-row limit.
+Room rows expose current occupancy separately from future allocation. Date ranges are half-open: a checkout on a date allows a new check-in on that date. Cancelled and checked-out allocations no longer block availability. Reservations in the response cover the selected window, today's arrivals/departures, and current checked-in stays so every metric can link to its underlying records without the reception list's 100-row limit.
 
 ## Monthly booked rooms
 

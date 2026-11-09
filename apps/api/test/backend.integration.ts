@@ -279,19 +279,23 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(bookingPath, body({ checkIn: future(7), checkOut: future(9) }), customer.cookie)).status, 201);
   });
 
-  await t.test('check-in/out transitions enforce dates and room readiness', async () => {
+  await t.test('check-in/out enforces room service status and releases rooms for the next guest', async () => {
     const created = await call(bookingPath, body({ checkIn: today, checkOut: future(1), expectedTotalMinor: 450000 }), customer.cookie);
     assert.equal(created.status, 201);
     const path = `${bookingPath}/${created.payload.data.id}`;
     assert.equal((await call(`${path}/check-in`, {}, customer.cookie)).status, 403);
     assert.equal((await call(`${path}/check-out`, {}, receptionist.cookie)).status, 409);
-    assert.equal((await call(`${staffPath}/rooms/${room}/housekeeping`, { status: 'dirty' }, receptionist.cookie)).status, 200);
+    await pool.query("UPDATE rooms SET operational_status = 'out_of_service' WHERE id = $1", [room]);
     assert.equal((await call(`${path}/check-in`, {}, receptionist.cookie)).status, 409);
-    await call(`${staffPath}/rooms/${room}/housekeeping`, { status: 'clean' }, receptionist.cookie);
+    await pool.query("UPDATE rooms SET operational_status = 'active' WHERE id = $1", [room]);
     assert.equal((await call(`${path}/check-in`, {}, receptionist.cookie)).status, 200);
     assert.equal((await call(`/bookings/${created.payload.data.id}/cancel`, {}, customer.cookie)).status, 409);
     assert.equal((await call(`${path}/check-out`, {}, receptionist.cookie)).status, 200);
-    assert.equal((await pool.query('SELECT housekeeping_status FROM rooms WHERE id = $1', [room])).rows[0].housekeeping_status, 'dirty');
+    assert.equal((await pool.query('SELECT active FROM booking_rooms WHERE booking_id = $1', [created.payload.data.id])).rows[0].active, false);
+    const next = await call(bookingPath, body({ checkIn: today, checkOut: future(1), expectedTotalMinor: 450000 }), customer.cookie);
+    assert.equal(next.status, 201);
+    assert.equal((await call(`${bookingPath}/${next.payload.data.id}/check-in`, {}, receptionist.cookie)).status, 200);
+    assert.equal((await call(`${bookingPath}/${next.payload.data.id}/check-out`, {}, receptionist.cookie)).status, 200);
     await call(`${staffPath}/members/${receptionist.id}/revoke`, {}, owner.cookie);
     assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 403);
   });
@@ -301,8 +305,8 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [reportHotel, owner.id, receptionist.id]);
     const types = (await pool.query<{ id: string }>("INSERT INTO room_types(property_id, name, max_guests, nightly_rate_minor) VALUES ($1, 'Classic', 2, 100000), ($1, 'Suite', 2, 200000) RETURNING id", [reportHotel])).rows;
     const typeA = types[0]!.id; const typeB = types[1]!.id;
-    const rooms = (await pool.query<{ id: string }>(`INSERT INTO rooms(property_id, room_type_id, number, operational_status, housekeeping_status)
-      VALUES ($1, $2, 'A', 'active', 'clean'), ($1, $3, 'B', 'active', 'dirty'), ($1, $3, 'C', 'out_of_service', 'clean') RETURNING id`, [reportHotel, typeA, typeB])).rows;
+    const rooms = (await pool.query<{ id: string }>(`INSERT INTO rooms(property_id, room_type_id, number, operational_status)
+      VALUES ($1, $2, 'A', 'active'), ($1, $3, 'B', 'active'), ($1, $3, 'C', 'out_of_service') RETURNING id`, [reportHotel, typeA, typeB])).rows;
     async function fixture(roomIndex: number, type: string, start: number, end: number, status: string, rate: number, active: boolean, currency = 'INR') {
       const id = randomUUID();
       await pool.query(`INSERT INTO bookings(id, property_id, customer_id, room_type_id, check_in, check_out, guests, status, nightly_rate_minor, total_minor, currency, idempotency_key, request_hash)
@@ -335,7 +339,6 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal(data.summary.departuresToday, 1);
     assert.equal(data.summary.reservations, 3);
     assert.equal(data.summary.cancelled, 1);
-    assert.deepEqual(data.summary.readiness, { clean: 1, dirty: 1, cleaning: 0 });
     assert.deepEqual(data.summary.bookingValueByCurrency, [{ currency: 'INR', amountMinor: 600000 }]);
     assert.deepEqual(data.daily.map((day: any) => [day.reservedRooms, day.availableRooms]), [[1, 1], [2, 0], [1, 1]]);
     assert.deepEqual(data.rooms.map((room: any) => room.status), ['reserved', 'reserved', 'out_of_service']);
@@ -353,7 +356,7 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal(empty.payload.data.summary.occupancyPercent, null);
     assert.ok(empty.payload.data.daily.every((day: any) => day.availableRooms === 0));
     for (const trustedOrigin of ['http://127.0.0.1:5174', 'http://127.0.0.1:5175']) {
-      assert.equal((await call(`/properties/${reportHotel}/staff/rooms/${rooms[0]!.id}/housekeeping`, { status: 'clean' }, owner.cookie, { origin: trustedOrigin })).status, 200);
+      assert.equal((await call(`/properties/${reportHotel}/staff/requests`, {}, owner.cookie, { origin: trustedOrigin })).status, 200);
     }
     await pool.query('UPDATE staff_memberships SET active = false WHERE property_id = $1 AND user_id = $2', [reportHotel, owner.id]);
     assert.equal((await call(path, undefined, owner.cookie)).status, 403, 'a valid JWT cannot bypass revoked owner access');

@@ -2,7 +2,7 @@ import type { Booking, OwnerBooking, OwnerBookedRooms, OwnerDashboard, OwnerRoom
 import type { api } from '@hotel/api-client';
 import { addDays, todayAtHotel } from './format.ts';
 
-export interface StaffRoom { id: string; number: string; housekeepingStatus: 'clean' | 'dirty' | 'cleaning'; operationalStatus: 'active' | 'out_of_service'; }
+export interface StaffRoom { id: string; number: string; operationalStatus: 'active' | 'out_of_service'; }
 const active = (booking: Booking) => booking.status === 'confirmed' || booking.status === 'checked_in';
 const overlaps = (booking: Booking, from: string, to: string) => booking.checkIn < to && booking.checkOut > from;
 
@@ -15,7 +15,7 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
   const rooms: (StaffRoom & { roomTypeId: string; roomTypeName: string })[] = Array.from({ length: 18 }, (_, i) => {
     const type = property.roomTypes[Math.floor(i / 6)]!;
     return { id: `room-${i + 1}`, number: `${Math.floor(i / 6) + 1}0${i % 6 + 1}`, roomTypeId: type.id, roomTypeName: type.name,
-      housekeepingStatus: i === 3 || i === 9 ? 'dirty' : i === 4 || i === 10 ? 'cleaning' : 'clean', operationalStatus: i === 17 ? 'out_of_service' : 'active' };
+      operationalStatus: i === 17 ? 'out_of_service' : 'active' };
   });
   const guests = ['Aarav Mehta', 'Diya Kapoor', 'Rohan Shah', 'Ananya Rao', 'Kabir Sethi', 'Meera Nair', 'Arjun Desai', 'Isha Verma', 'Vihaan Joshi', 'Sara Khan', 'Aditya Bose', 'Naina Patel'];
   const stays: [number, number, number, Booking['status']][] = [
@@ -57,7 +57,7 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
         departuresToday: selectedBookings.filter(booking => booking.checkOut === today && booking.status !== 'cancelled').length, reservations: windowBookings.length,
         confirmed: windowBookings.filter(booking => booking.status === 'confirmed').length, checkedIn: windowBookings.filter(booking => booking.status === 'checked_in').length,
         checkedOut: windowBookings.filter(booking => booking.status === 'checked_out').length, cancelled: windowBookings.filter(booking => booking.status === 'cancelled').length,
-        bookingValueByCurrency: amountMinor ? [{ currency: 'INR', amountMinor }] : [], readiness: { clean: inService.filter(room => room.housekeepingStatus === 'clean').length, dirty: inService.filter(room => room.housekeepingStatus === 'dirty').length, cleaning: inService.filter(room => room.housekeepingStatus === 'cleaning').length } } };
+        bookingValueByCurrency: amountMinor ? [{ currency: 'INR', amountMinor }] : [] } };
   }
   const request: typeof api = async <T,>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> => {
     signal?.throwIfAborted();
@@ -91,17 +91,13 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
       const room = rooms.find(room => room.id === booking.roomId)!;
       if (action === 'check-in') {
         if (booking.status !== 'confirmed' || booking.checkIn > today || booking.checkOut <= today) throw new Error('This reservation is not eligible for check-in today.');
-        if (room.housekeepingStatus !== 'clean' || room.operationalStatus !== 'active' || bookings.some(other => other.id !== id && other.roomId === room.id && other.status === 'checked_in')) throw new Error('The room must be clean, in service, and vacant before check-in.');
+        if (room.operationalStatus !== 'active' || bookings.some(other => other.id !== id && other.roomId === room.id && other.status === 'checked_in')) throw new Error('The room must be in service and vacant before check-in.');
         booking.status = 'checked_in';
       } else if (action === 'check-out') {
         if (booking.status !== 'checked_in') throw new Error('Only checked-in guests can check out.');
-        booking.status = 'checked_out'; room.housekeepingStatus = 'dirty';
+        booking.status = 'checked_out';
       } else { if (booking.status !== 'confirmed') throw new Error('Only confirmed reservations can be cancelled.'); booking.status = 'cancelled'; }
       booking.allocationActive = active(booking); result = { updated: true };
-    } else if (/^\/staff\/rooms\/[^/]+\/housekeeping$/.test(route) && body !== undefined) {
-      const room = rooms.find(room => room.id === route.split('/')[3]);
-      if (!room || !['clean', 'dirty', 'cleaning'].includes(input.status!)) throw new Error('Choose a valid room status.');
-      room.housekeepingStatus = input.status as StaffRoom['housekeepingStatus']; result = { updated: true };
     } else if (route === '/staff/team' && body === undefined) result = { members, requests };
     else if (/^\/staff\/requests\/[^/]+\/review$/.test(route) && body !== undefined) {
       const pending = requests.find(item => item.id === route.split('/')[3]);

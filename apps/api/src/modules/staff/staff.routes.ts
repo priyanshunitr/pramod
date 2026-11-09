@@ -21,23 +21,9 @@ staffRouter.get('/speech/status', async (request, response) => {
 staffRouter.get('/rooms', async (request, response) => {
   const propertyId = propertyParam(request);
   await requireRole(propertyId, account(response).id);
-  const result = await pool.query(`SELECT id, number, housekeeping_status AS "housekeepingStatus", operational_status AS "operationalStatus"
+  const result = await pool.query(`SELECT id, number, operational_status AS "operationalStatus"
     FROM rooms WHERE property_id = $1 ORDER BY number`, [propertyId]);
   response.json({ data: result.rows });
-});
-
-staffRouter.post('/rooms/:roomId/housekeeping', async (request, response) => {
-  const propertyId = propertyParam(request);
-  const roomId = parse(uuid, request.params.roomId);
-  const { status } = parse(z.object({ status: z.enum(['clean', 'dirty', 'cleaning']) }).strict(), request.body);
-  await transaction(async client => {
-    await lockProperty(client, propertyId);
-    await requireRole(propertyId, account(response).id, false, client);
-    const result = await client.query('UPDATE rooms SET housekeeping_status = $3 WHERE property_id = $1 AND id = $2', [propertyId, roomId, status]);
-    if (!result.rowCount) throw new HttpError(404, 'Room not found.');
-    await audit(client, propertyId, account(response).id, `room.${status}`, roomId);
-  });
-  response.json({ data: { updated: true } });
 });
 
 staffRouter.get('/access', async (request, response) => {

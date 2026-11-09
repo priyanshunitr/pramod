@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { ArrowUpRight, BedDouble, CalendarDays, LayoutDashboard, LogOut, Sparkles, UsersRound, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowUpRight, BedDouble, CalendarDays, LayoutDashboard, LogOut, UsersRound, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { frontendUrl } from '@hotel/api-client';
 import { useWorkspace } from './WorkspaceContext';
 import { OwnerNotifications } from './OwnerNotifications';
@@ -12,8 +12,8 @@ export function WorkspaceShell({ owner = false, children }: { owner?: boolean; c
   useEffect(() => { setMenuOpen(false); window.scrollTo(0, 0); document.getElementById('workspace-main')?.focus({ preventScroll: true }); }, [pathname]);
   const links = owner ? [
     { path: '/', title: 'Overview', Icon: LayoutDashboard }, { path: '/availability', title: 'Room availability', Icon: BedDouble },
-    { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/readiness', title: 'Room readiness', Icon: Sparkles }, { path: '/team', title: 'Hotel team', Icon: UsersRound },
-  ] : [{ path: '/', title: 'Front desk', Icon: LayoutDashboard }, { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/availability', title: 'Room availability', Icon: BedDouble }, { path: '/readiness', title: 'Room readiness', Icon: Sparkles }];
+    { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/team', title: 'Hotel team', Icon: UsersRound },
+  ] : [{ path: '/', title: 'Front desk', Icon: LayoutDashboard }, { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/availability', title: 'Room availability', Icon: BedDouble }];
   async function logout() { setBusy(true); try { await workspace.signOut(); } catch { setError('Could not sign out. Try again.'); } finally { setBusy(false); } }
   const activePage = links.find(link => link.path === pathname)?.title ?? 'Workspace';
   return <div className="portal-layout"><a className="skip-link" href="#workspace-main">Skip to content</a>

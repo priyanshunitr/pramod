@@ -105,9 +105,9 @@ export async function transitionBooking(id: string, actorId: string, action: 'ca
       if (!propertyId && booking.check_in < today) throw new HttpError(409, 'Contact reception to change a past reservation.');
     } else if (action === 'check-in') {
       if (booking.status !== 'confirmed' || today < booking.check_in || today >= booking.check_out) throw new HttpError(409, 'Check-in is available only during the reserved stay dates.');
-      const dirty = await client.query(`SELECT 1 FROM booking_rooms br JOIN rooms r ON r.id = br.room_id
-        WHERE br.booking_id = $1 AND (r.housekeeping_status <> 'clean' OR r.operational_status <> 'active')`, [id]);
-      if (dirty.rowCount) throw new HttpError(409, 'The assigned room must be clean and in service before check-in.');
+      const outOfService = await client.query(`SELECT 1 FROM booking_rooms br JOIN rooms r ON r.id = br.room_id
+        WHERE br.booking_id = $1 AND r.operational_status <> 'active'`, [id]);
+      if (outOfService.rowCount) throw new HttpError(409, 'The assigned room must be in service before check-in.');
       const occupied = await client.query(`SELECT 1 FROM booking_rooms mine JOIN booking_rooms other ON other.room_id = mine.room_id
         JOIN bookings b ON b.id = other.booking_id WHERE mine.booking_id = $1 AND b.id <> $1 AND b.status = 'checked_in'`, [id]);
       if (occupied.rowCount) throw new HttpError(409, 'The previous guest must check out before this room can be checked in.');
@@ -115,7 +115,6 @@ export async function transitionBooking(id: string, actorId: string, action: 'ca
     const status = action === 'cancel' ? 'cancelled' : action === 'check-in' ? 'checked_in' : 'checked_out';
     await client.query('UPDATE bookings SET status = $2, updated_at = now() WHERE id = $1', [id, status]);
     if (action !== 'check-in') await client.query('UPDATE booking_rooms SET active = false WHERE booking_id = $1', [id]);
-    if (action === 'check-out') await client.query("UPDATE rooms SET housekeeping_status = 'dirty' WHERE id IN (SELECT room_id FROM booking_rooms WHERE booking_id = $1)", [id]);
     if (action === 'cancel') await client.query("INSERT INTO notification_outbox(booking_id, event) VALUES ($1, 'booking.cancelled') ON CONFLICT DO NOTHING", [id]);
     await audit(client, booking.property_id, actorId, `booking.${status}`, id);
   });

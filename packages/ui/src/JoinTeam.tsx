@@ -51,7 +51,7 @@ export function JoinTeam({ propertyId, owner, requestError }: { propertyId: stri
         <ol className="approval-steps" aria-label="Reception access steps">
           <li className="complete"><span><Check size={14} /></span><div><strong>Sign in</strong><small>Your account is ready.</small></div></li>
           <li className={pending ? 'current' : ''}><span>2</span><div><strong>Owner approval</strong><small>{pending ? 'Request sent. Waiting for review.' : 'The owner reviews your request.'}</small></div></li>
-          <li><span>3</span><div><strong>Open reception</strong><small>Manage stays and room readiness.</small></div></li>
+          <li><span>3</span><div><strong>Open reception</strong><small>Manage reservations and guest arrivals.</small></div></li>
         </ol>
         {pending ? <div className="approval-notice" role="status"><strong>Your request is with the owner.</strong><p>It’s in their reception requests. This page checks every few seconds and opens your workspace as soon as they approve.</p>{access?.request && <small>Requested {new Date(access.request.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</small>}</div>
           : <p>{declined ? 'You still have your guest account. Speak with the owner, then send a new request if needed.' : removed ? 'Reception tools are no longer available. You can ask the owner to approve access again.' : 'Send a reception request. The owner must approve it before you can access hotel operations.'}</p>}

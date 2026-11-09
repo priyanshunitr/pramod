@@ -24,7 +24,7 @@ export async function ownerDashboard(propertyId: string, actorId: string, query:
     if (query.roomTypeId && !roomTypes.some(type => type.id === query.roomTypeId)) throw new HttpError(404, 'Room type not found for this hotel.');
     const roomRows = (await client.query<Omit<OwnerRoom, 'status' | 'reservations'>>(`
       SELECT r.id, r.number, r.room_type_id AS "roomTypeId", t.name AS "roomTypeName",
-        r.housekeeping_status AS "housekeepingStatus", r.operational_status AS "operationalStatus",
+        r.operational_status AS "operationalStatus",
         EXISTS (SELECT 1 FROM booking_rooms br JOIN bookings b ON b.id = br.booking_id
           WHERE br.room_id = r.id AND b.status = 'checked_in') AS occupied
       FROM rooms r JOIN room_types t ON t.id = r.room_type_id AND t.property_id = r.property_id
@@ -72,9 +72,6 @@ export async function ownerDashboard(propertyId: string, actorId: string, query:
       checkedOut: periodBookings.filter(booking => booking.status === 'checked_out').length,
       cancelled: periodBookings.filter(booking => booking.status === 'cancelled').length,
       bookingValueByCurrency: [...values].map(([currency, amountMinor]) => ({ currency, amountMinor })).sort((a, b) => a.currency.localeCompare(b.currency)),
-      readiness: { clean: inService.filter(room => room.housekeepingStatus === 'clean').length,
-        dirty: inService.filter(room => room.housekeepingStatus === 'dirty').length,
-        cleaning: inService.filter(room => room.housekeepingStatus === 'cleaning').length },
     };
     const daily = Array.from({ length: nights }, (_, index) => {
       const date = addDays(from, index);

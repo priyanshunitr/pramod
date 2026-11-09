@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import type { OwnerBookedRooms, OwnerDashboard, StaffNotifications } from '@hotel/contracts';
 import { createPreviewStore } from '../../../packages/ui/src/preview.ts';
 
-test('sample workspace mutations update reports and room readiness without network access', async () => {
+test('sample check-in and checkout update occupancy and release allocations without network access', async () => {
   const store = createPreviewStore('2026-11-02');
   const base = `/properties/${store.property.id}`;
   const before = await store.request<OwnerDashboard>(`${base}/owner/dashboard`);
@@ -13,7 +13,8 @@ test('sample workspace mutations update reports and room readiness without netwo
   assert.equal(after.summary.occupiedRooms, before.summary.occupiedRooms + 1);
   await store.request(`${base}/bookings/${arrival.id}/check-out`, {});
   const departed = await store.request<OwnerDashboard>(`${base}/owner/dashboard`);
-  assert.equal(departed.rooms.find(room => room.id === arrival.roomId)?.housekeepingStatus, 'dirty');
+  assert.equal(departed.rooms.find(room => room.id === arrival.roomId)?.occupied, false);
+  assert.equal(departed.summary.occupiedRooms, before.summary.occupiedRooms);
   assert.equal(departed.bookings.find(booking => booking.id === arrival.id)?.allocationActive, false);
   assert.equal(before.bookings.find(booking => booking.id === arrival.id)?.status, 'confirmed', 'read snapshots are detached from store mutations');
 });

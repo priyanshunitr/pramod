@@ -1,15 +1,14 @@
 # Pramod staff workspaces
 
-The reception and owner apps remain independent React frontends in the Turborepo. They share the workspace shell, access gates, reservation details, housekeeping board, team controls and visual styles from `packages/ui`.
+The reception and owner apps remain independent React frontends in the Turborepo. They share the workspace shell, access gates, reservation details, team controls and visual styles from `packages/ui`.
 
 ## Reception
 
 1. Sign in with an approved receptionist or owner account. Accounts without membership can accept a receptionist invitation or request reception access. Owner accounts are provisioned privately by the setup team; the owner website only offers sign-in.
-2. The front desk shows expected arrivals, departures due today or overdue, currently checked-in stays, and in-service rooms needing preparation.
+2. The front desk shows expected arrivals, departures due today or overdue, and currently checked-in stays.
 3. Open an arrivals/departures/in-house view, or search reservations by guest, email, room or reference.
-4. Open a reservation to review dates, guest count, assigned room and agreed value. Check-in appears only during an eligible stay; the API additionally verifies vacancy, room condition and permissions. Check-out marks the room dirty. Cancellation requires an explicit confirmation.
-5. Use room readiness to search a room and mark it dirty, cleaning or clean.
-6. Use availability to check a 1–30-night stay and guest capacity. Room types show live counts, nightly rates and full stay values. Availability is not an inventory hold. Existing guest checkout creates reservations; a walk-in booking endpoint is not implemented.
+4. Open a reservation to review dates, guest count, assigned room and agreed value. Check-in appears only during an eligible stay; the API additionally verifies vacancy, room service status and permissions. Check-out releases the room allocation. Cancellation requires an explicit confirmation.
+5. Use availability to check a 1–30-night stay and guest capacity. Room types show live counts, nightly rates and full stay values. Availability is not an inventory hold. Existing guest checkout creates reservations; a walk-in booking endpoint is not implemented.
 
 Reception uses the existing latest-100 reservation endpoint. If that limit is reached, the UI explicitly scopes totals to the loaded list. Owner reports do not have this list limit.
 
@@ -28,11 +27,11 @@ Vite proxies WebSocket upgrades alongside `/api` HTTP requests. Production rever
 ## Owner
 
 1. Sign in with an active owner membership. Reception access alone cannot open the live owner workspace.
-2. Choose a 1–30-night reporting window and room type. The overview shows current occupancy, availability across the selected stay, scheduled booking value, reservation counts, a nightly outlook and current room readiness.
+2. Choose a 1–30-night reporting window and room type. The overview shows current occupancy, availability across the selected stay, scheduled booking value, reservation counts, a nightly outlook and a monthly booked-rooms chart.
 3. Metric links open the underlying rooms or reservations while retaining the selected dates/type.
    The overview also includes a monthly rooms-booked bar chart. Select any month and hover, focus, or tap a day to see its booked room numbers; the room-type filter applies here too.
-4. Room availability includes a nightly calendar. Select a reserved cell to find its reservation; room rows also show current occupancy and housekeeping separately.
-5. Use the shared reservation and readiness screens for operational tasks.
+4. Room availability includes a nightly calendar. Select a reserved cell to find its reservation; room rows also show current occupancy separately from availability.
+5. Use the shared reservation screens for operational tasks.
 6. Review staff access requests, create email-bound invitations and revoke access. The API protects the last active owner. Invitations show a copyable code; no email is sent automatically.
 
 Booking value is not collected revenue. Current occupancy is not historical occupancy. See `owner-reporting.md` for exact metric definitions. Worker metrics and delivery alerts remain deferred.
@@ -52,6 +51,6 @@ The reception's illustrative room images reuse the existing guest assets. Attrib
 ## Verification
 
 - All four application builds, workspace type checks, and the full 42-test suite pass, including API JWT checks, speech proxy access controls, capture cleanup, guest stay validation, owner drilldowns, monthly booked-room previews, reception date scopes and isolated sample transitions.
-- Browser checks cover sample check-in/check-out, dirty-to-clean housekeeping, capacity filtering, calendar-to-reservation drilldowns, cancellation confirmation and staff-request approval.
+- Browser checks cover sample check-in/check-out, capacity filtering, calendar-to-reservation drilldowns, cancellation confirmation and staff-request approval.
 - Desktop and 390px mobile layouts include collapsible navigation, horizontally scrollable data tables, native modal focus containment and reduced-motion support.
 - Real authenticated writes were not exercised in this frontend pass: the API and PostgreSQL were not running. Existing API contracts and authorization are retained.
