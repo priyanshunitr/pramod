@@ -28,7 +28,7 @@ export function ReservationSearch({ value, onChange }: { value: string; onChange
   }
   return <div className="reservation-search">
     <div className={`search-field voice-search ${state === 'listening' ? 'is-listening' : ''}`}>
-      <Search size={16} aria-hidden="true" /><input aria-label="Search reservations" aria-describedby="reservation-speech-help" placeholder="Guest, email, room or reference" value={value} readOnly={busy} onChange={event => onChange(event.target.value)} />
+      <Search size={16} aria-hidden="true" /><input aria-label="Search reservations" aria-describedby="reservation-speech-help" placeholder="Guest, phone, email, room or reference" value={value} readOnly={busy} onChange={event => onChange(event.target.value)} />
       {value && !busy && <button className="voice-clear" aria-label="Clear reservation search" onClick={() => onChange('')}><X size={14} /></button>}
       <button className="voice-button" aria-label={state === 'connecting' ? 'Cancel speech connection' : busy ? 'Stop speech to text' : 'Start speech to text'} aria-pressed={busy} title={preview ? 'Sign in with approved reception access to use speech.' : !supported ? 'Use a browser with microphone support on HTTPS or localhost.' : busy ? 'Stop recording' : 'Search by speaking'} disabled={preview || !supported || state === 'finishing'} onClick={toggle}>
         {busy ? <Square size={14} fill="currentColor" /> : <Mic size={17} />}

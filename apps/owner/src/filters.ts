@@ -10,6 +10,6 @@ export function selectBookings(report: OwnerDashboard, scope: string, search: st
       : scope === 'inhouse' ? booking.status === 'checked_in'
       : scope === 'value' ? overlaps && booking.status !== 'cancelled'
       : ['confirmed', 'checked_in', 'checked_out', 'cancelled'].includes(scope) ? overlaps && booking.status === scope : overlaps;
-    return inScope && (!term || [booking.id, booking.customerName, booking.customerEmail, booking.roomNumber, booking.roomTypeName].some(value => value?.toLowerCase().includes(term)));
+    return inScope && (!term || [booking.id, booking.customerName, booking.customerEmail, booking.customerPhone, booking.roomNumber, booking.roomTypeName].some(value => value?.toLowerCase().includes(term)));
   });
 }

@@ -7,7 +7,7 @@ export function matchesReservationSearch(booking: Booking, value: string) {
   if (!query) return true;
   const room = /^(?:room(?: number)?|कमरा)\s+(\d+[a-z]?)$/u.exec(query)?.[1];
   if (room) return booking.roomNumber?.toLowerCase() === room;
-  return [booking.customerName, booking.customerEmail, booking.id, booking.roomNumber].some(field => field?.toLowerCase().includes(query));
+  return [booking.customerName, booking.customerEmail, booking.customerPhone, booking.id, booking.roomNumber].some(field => field?.toLowerCase().includes(query));
 }
 export function inReservationScope(booking: Booking, scope: ReservationScope, today: string) {
   switch (scope) {

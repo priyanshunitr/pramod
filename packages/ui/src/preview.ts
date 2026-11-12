@@ -1,5 +1,6 @@
-import type { Booking, OwnerBooking, OwnerBookedRooms, OwnerDashboard, OwnerRoom, PropertyCatalog } from '@hotel/contracts';
+import type { Booking, OwnerBooking, OwnerBookedRooms, OwnerDashboard, OwnerRoom, PropertyCatalog, StaffBookingAvailability, StaffBookingInput } from '@hotel/contracts';
 import type { api } from '@hotel/api-client';
+import { ApiError } from '@hotel/api-client/error';
 import { addDays, todayAtHotel } from './format.ts';
 
 export interface StaffRoom { id: string; number: string; operationalStatus: 'active' | 'out_of_service'; }
@@ -59,13 +60,49 @@ export function createPreviewStore(today = todayAtHotel('Asia/Kolkata')) {
         checkedOut: windowBookings.filter(booking => booking.status === 'checked_out').length, cancelled: windowBookings.filter(booking => booking.status === 'cancelled').length,
         bookingValueByCurrency: amountMinor ? [{ currency: 'INR', amountMinor }] : [] } };
   }
+  const staffAttempts = new Map<string, { fingerprint: string; bookingId: string }>();
+  function staffRooms(checkIn: string, checkOut: string, guests: number): StaffBookingAvailability {
+    const nights = (Date.parse(checkOut) - Date.parse(checkIn)) / 86400000;
+    if (!Number.isFinite(nights) || checkIn < today || nights < 1 || nights > 30 || !Number.isInteger(guests) || guests < 1 || guests > 6) throw new ApiError('Choose valid dates and 1–6 guests.', 400);
+    return { nights, currency: property.currency, rooms: rooms.flatMap(room => {
+      const type = property.roomTypes.find(type => type.id === room.roomTypeId)!;
+      if (room.operationalStatus !== 'active' || type.maxGuests < guests || type.nightlyRateMinor === null
+        || bookings.some(booking => booking.roomId === room.id && active(booking) && overlaps(booking, checkIn, checkOut))) return [];
+      return [{ roomId: room.id, roomNumber: room.number, roomTypeId: type.id, roomTypeName: type.name, maxGuests: type.maxGuests,
+        nightlyRateMinor: type.nightlyRateMinor, totalMinor: type.nightlyRateMinor * nights }];
+    }) };
+  }
   const request: typeof api = async <T,>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> => {
     signal?.throwIfAborted();
     const url = new URL(path, 'https://preview.invalid');
     const route = url.pathname.replace(`/properties/${property.id}`, '');
     const input = (body ?? {}) as Record<string, string>;
     let result: unknown;
-    if (route === '/owner/dashboard' && body === undefined) {
+    if (route === '/staff/booking-availability' && body === undefined) {
+      result = staffRooms(url.searchParams.get('checkIn') || '', url.searchParams.get('checkOut') || '', Number(url.searchParams.get('guests')));
+    } else if (route === '/staff/bookings' && body !== undefined) {
+      const data = body as StaffBookingInput;
+      const fingerprint = JSON.stringify([data.roomId, data.roomTypeId, data.checkIn, data.checkOut, data.guests,
+        data.expectedTotalMinor, data.currency, data.guest.fullName, data.guest.email ?? null, data.guest.phone ?? null]);
+      const previous = staffAttempts.get(data.idempotencyKey);
+      if (previous) {
+        if (previous.fingerprint !== fingerprint) throw new ApiError('This booking request was already used for different details.', 409);
+        result = bookings.find(booking => booking.id === previous.bookingId);
+      } else {
+        if (data.guest.fullName.trim().length < 2 || (!data.guest.email && !data.guest.phone)) throw new ApiError('Add the guest name and a phone number or email.', 400);
+        const room = staffRooms(data.checkIn, data.checkOut, data.guests).rooms.find(room => room.roomId === data.roomId && room.roomTypeId === data.roomTypeId);
+        if (!room) throw new ApiError('These dates are no longer available. Please choose another room or stay.', 409);
+        if (room.totalMinor !== data.expectedTotalMinor || property.currency !== data.currency) throw new ApiError('The price has changed. Refresh availability and review the new total.', 409);
+        const booking: OwnerBooking = { id: crypto.randomUUID(), propertyId: property.id, roomId: room.roomId, roomNumber: room.roomNumber,
+          roomTypeId: room.roomTypeId, roomTypeName: room.roomTypeName, checkIn: data.checkIn, checkOut: data.checkOut, guests: data.guests,
+          status: 'confirmed', allocationActive: true, nightlyRateMinor: room.nightlyRateMinor, totalMinor: room.totalMinor, currency: property.currency,
+          customerName: data.guest.fullName, customerEmail: data.guest.email ?? null, customerPhone: data.guest.phone ?? null, bookedByName: 'Sample hotel team' };
+        bookings.push(booking); staffAttempts.set(data.idempotencyKey, { fingerprint, bookingId: booking.id }); result = booking;
+      }
+    } else if (/^\/staff\/bookings\/[^/]+$/.test(route) && body === undefined) {
+      result = bookings.find(booking => booking.id === route.split('/')[3]);
+      if (!result) throw new ApiError('Reservation not found.', 404);
+    } else if (route === '/owner/dashboard' && body === undefined) {
       result = report(url.searchParams.get('from') || today, url.searchParams.get('to') || addDays(today, 7), url.searchParams.get('roomTypeId') || '');
     } else if (route === '/owner/booked-rooms' && body === undefined) {
       const month = url.searchParams.get('month') ?? '';

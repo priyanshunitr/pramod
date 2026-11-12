@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { ArrowUpRight, BedDouble, CalendarDays, LayoutDashboard, LogOut, UsersRound, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowUpRight, BedDouble, CalendarDays, CalendarPlus, LayoutDashboard, LogOut, UsersRound, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { frontendUrl } from '@hotel/api-client';
 import { useWorkspace } from './WorkspaceContext';
 import { OwnerNotifications } from './OwnerNotifications';
@@ -15,6 +15,7 @@ export function WorkspaceShell({ owner = false, children }: { owner?: boolean; c
     { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/team', title: 'Hotel team', Icon: UsersRound },
   ] : [{ path: '/', title: 'Front desk', Icon: LayoutDashboard }, { path: '/reservations', title: 'Reservations', Icon: CalendarDays }, { path: '/availability', title: 'Room availability', Icon: BedDouble }];
   async function logout() { setBusy(true); try { await workspace.signOut(); } catch { setError('Could not sign out. Try again.'); } finally { setBusy(false); } }
+  links.splice(1, 0, { path: '/book', title: 'New reservation', Icon: CalendarPlus });
   const activePage = links.find(link => link.path === pathname)?.title ?? 'Workspace';
   return <div className="portal-layout"><a className="skip-link" href="#workspace-main">Skip to content</a>
     <aside className={`portal-sidebar ${menuOpen ? 'menu-open' : ''}`}><NavLink to="/" className="portal-wordmark">Pramod<span>THE ART OF A GOOD STAY</span></NavLink>

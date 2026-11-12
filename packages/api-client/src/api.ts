@@ -1,10 +1,9 @@
 import type { PropertyCatalog } from '@hotel/contracts';
+import { ApiError } from './error';
+export { ApiError } from './error';
 
 export const AUTH_REQUIRED_EVENT = 'pramod:auth-required';
 
-export class ApiError extends Error {
-  constructor(message: string, public status: number) { super(message); }
-}
 export async function api<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/api${path}`, {
     method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', signal,

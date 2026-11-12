@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { OwnerBookedRooms, OwnerDashboard, StaffNotifications } from '@hotel/contracts';
+import type { Booking, OwnerBookedRooms, OwnerDashboard, StaffNotifications, StaffBookingAvailability, StaffBookingInput } from '@hotel/contracts';
 import { createPreviewStore } from '../../../packages/ui/src/preview.ts';
 
 test('sample check-in and checkout update occupancy and release allocations without network access', async () => {
@@ -59,4 +59,27 @@ test('monthly preview includes completed stays, excludes checkout and cancellati
   const empty = await store.request<OwnerBookedRooms>(`${base}?month=2025-02`);
   assert.equal(empty.days.length, 28); assert.ok(empty.days.every(day => day.bookedRooms === 0));
   await assert.rejects(store.request(`${base}?month=2024-13`), /valid month/);
+});
+test('staff preview books an exact room, retries safely and updates room reports', async () => {
+  const store = createPreviewStore('2026-11-12');
+  const base = `/properties/${store.property.id}`;
+  const url = `${base}/staff/booking-availability?checkIn=2026-11-12&checkOut=2026-11-14&guests=2`;
+  const availability = await store.request<StaffBookingAvailability>(url);
+  const room = availability.rooms[0]!;
+  const input: StaffBookingInput = { checkIn: '2026-11-12', checkOut: '2026-11-14', guests: 2,
+    roomId: room.roomId, roomTypeId: room.roomTypeId, expectedTotalMinor: room.totalMinor, currency: availability.currency,
+    idempotencyKey: 'preview-request', guest: { fullName: 'Walk-in Guest', phone: '+91 98765 43210' } };
+  const booking = await store.request<Booking>(`${base}/staff/bookings`, input);
+  assert.equal(booking.roomNumber, room.roomNumber);
+  assert.equal(booking.customerName, input.guest.fullName);
+  assert.equal((await store.request<Booking>(`${base}/staff/bookings`, input)).id, booking.id);
+  await assert.rejects(store.request(`${base}/staff/bookings`, { ...input, idempotencyKey: 'competing-request' }), /no longer available/);
+  await assert.rejects(store.request(`${base}/staff/bookings`, { ...input, guests: 1 }), /different details/);
+  assert.ok(!(await store.request<StaffBookingAvailability>(url)).rooms.some(item => item.roomId === room.roomId));
+  const report = await store.request<OwnerDashboard>(`${base}/owner/dashboard`);
+  assert.ok(report.bookings.some(item => item.id === booking.id));
+  assert.equal((await store.request<Booking>(`${base}/staff/bookings/${booking.id}`)).customerPhone, input.guest.phone);
+  await store.request(`${base}/bookings/${booking.id}/cancel`, {});
+  assert.equal((await store.request<Booking>(`${base}/staff/bookings`, input)).status, 'cancelled');
+  assert.ok((await store.request<StaffBookingAvailability>(url)).rooms.some(item => item.roomId === room.roomId));
 });

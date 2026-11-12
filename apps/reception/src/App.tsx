@@ -1,6 +1,6 @@
 import { Link, Route, Routes } from 'react-router';
 import { api, useAuth } from '@hotel/api-client';
-import { StaffGate, WorkspaceShell, WorkspaceProvider, WorkspacePreview } from '@hotel/ui';
+import { StaffBookingPage, StaffGate, WorkspaceShell, WorkspaceProvider, WorkspacePreview } from '@hotel/ui';
 import { ReceptionPage } from './ReceptionPage';
 import { AvailabilityPage } from './AvailabilityPage';
 
@@ -15,6 +15,7 @@ function ReceptionRoutes() {
   return <WorkspaceShell><Routes>
     <Route index element={<ReceptionPage dashboard />} />
     <Route path="reservations" element={<ReceptionPage key="reservations" />} />
+    <Route path="book" element={<StaffBookingPage />} />
     <Route path="availability" element={<AvailabilityPage />} />
     <Route path="*" element={<div className="empty-state"><h1>Page not found.</h1><Link to="/" className="text-link">Back to reservations</Link></div>} />
   </Routes></WorkspaceShell>;

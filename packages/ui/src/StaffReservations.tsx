@@ -5,10 +5,11 @@ import { formatMoney, prettyDate } from './format';
 import { useWorkspace } from './WorkspaceContext';
 
 const labels = { confirmed: 'Confirmed', checked_in: 'In house', checked_out: 'Checked out', cancelled: 'Cancelled' };
-export function StaffReservations({ items, today, onChange, compact = false, empty = 'No reservations match this view.' }: {
-  items: Booking[]; today: string; onChange: () => void | Promise<void>; compact?: boolean; empty?: string;
+export function StaffReservations({ items, today, onChange, compact = false, selectedBookingId, empty = 'No reservations match this view.' }: {
+  items: Booking[]; today: string; onChange: () => void | Promise<void>; compact?: boolean; selectedBookingId?: string; empty?: string;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => { setSelected(selectedBookingId || null); }, [selectedBookingId]);
   const booking = items.find(item => item.id === selected);
   return <>
     {items.length ? <div className="staff-table-scroll"><table className="staff-table"><thead><tr><th>Guest</th><th>Stay</th><th>Room</th><th>Status</th>{!compact && <th>Stay value</th>}<th><span className="sr-only">Reservation details</span></th></tr></thead><tbody>{items.map(item => <tr key={item.id}>
@@ -47,7 +48,7 @@ function ReservationDetails({ booking, today, close, onChange }: { booking: Book
   const canCheckIn = booking.status === 'confirmed' && booking.checkIn <= today && booking.checkOut > today;
   return <dialog ref={dialog} className="workspace-dialog" aria-labelledby="reservation-title" onCancel={event => { event.preventDefault(); if (!busy) close(); }}>
     <div className="dialog-heading"><div><p className="eyebrow">RESERVATION DETAILS</p><h2 id="reservation-title">{booking.customerName || 'Guest stay'}</h2></div><button className="icon-button" aria-label="Close reservation details" disabled={busy} onClick={close}><X size={21} /></button></div>
-    <div className="dialog-body"><span className={`status-badge ${booking.status}`}>{labels[booking.status]}</span><dl className="detail-grid"><div><dt>Check-in</dt><dd>{prettyDate(booking.checkIn)}</dd></div><div><dt>Check-out</dt><dd>{prettyDate(booking.checkOut)}</dd></div><div><dt>Room</dt><dd>{booking.roomNumber} · {booking.roomTypeName}</dd></div><div><dt>Guests</dt><dd>{booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</dd></div><div className="detail-wide"><dt>Email</dt><dd>{booking.customerEmail || 'Not provided'}</dd></div><div className="detail-wide"><dt>Reference</dt><dd>{booking.id}</dd></div></dl>
+    <div className="dialog-body"><span className={`status-badge ${booking.status}`}>{labels[booking.status]}</span><dl className="detail-grid"><div><dt>Check-in</dt><dd>{prettyDate(booking.checkIn)}</dd></div><div><dt>Check-out</dt><dd>{prettyDate(booking.checkOut)}</dd></div><div><dt>Room</dt><dd>{booking.roomNumber} · {booking.roomTypeName}</dd></div><div><dt>Guests</dt><dd>{booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</dd></div><div className="detail-wide"><dt>Email</dt><dd>{booking.customerEmail || 'Not provided'}</dd></div><div className="detail-wide"><dt>Phone</dt><dd>{booking.customerPhone || 'Not provided'}</dd></div>{booking.bookedByName && <div className="detail-wide"><dt>Booked by</dt><dd>{booking.bookedByName}</dd></div>}<div className="detail-wide"><dt>Reference</dt><dd>{booking.id}</dd></div></dl>
       <div className="dialog-total"><span>Agreed stay value</span><strong>{formatMoney(booking.totalMinor / 100, booking.currency)}</strong></div><p className="fine-print">{formatMoney(booking.nightlyRateMinor / 100, booking.currency)} per night. No payment collection is recorded here.</p>
       {booking.status === 'confirmed' && <p className="fine-print">{canCheckIn ? 'Check-in requires a vacant room in service.' : booking.checkIn > today ? 'Check-in becomes available on the arrival date.' : 'This stay’s check-in window has passed.'}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}{message && <p className="notice" role="status">{message}</p>}
