@@ -1,3 +1,4 @@
+import type { StaffBookingAvailability, StaffBookingInput } from '@hotel/contracts';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool.js';
 import { transaction } from '../../db/transaction.js';
@@ -9,7 +10,7 @@ import { hotelToday, nightCount, validateStay, type Stay } from './stay.js';
 type Queryable = Pick<PoolClient, 'query'>;
 interface Property { id: string; timezone: string; currency: string; }
 export interface Booking {
-  id: string; propertyId: string; customerId: string; roomTypeId: string;
+  id: string; propertyId: string; customerId: string | null; roomTypeId: string;
   roomTypeName: string; checkIn: string; checkOut: string; guests: number;
   status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
   nightlyRateMinor: number; totalMinor: number; currency: string; roomNumber: string;
@@ -19,6 +20,11 @@ const bookingSelect = `SELECT b.id, b.property_id AS "propertyId", b.customer_id
   b.guests, b.status, b.nightly_rate_minor AS "nightlyRateMinor", b.total_minor::float8 AS "totalMinor", b.currency,
   r.number AS "roomNumber" FROM bookings b JOIN room_types t ON t.id = b.room_type_id
   JOIN booking_rooms br ON br.booking_id = b.id JOIN rooms r ON r.id = br.room_id`;
+
+const staffBookingSelect = `${bookingSelect.replace('SELECT b.id,', `SELECT COALESCE(b.guest_name, u.full_name) AS "customerName",
+  COALESCE(b.guest_email, u.email) AS "customerEmail", COALESCE(b.guest_phone, u.phone) AS "customerPhone",
+  creator.full_name AS "bookedByName", b.id,`)}
+  LEFT JOIN users u ON u.id = b.customer_id LEFT JOIN users creator ON creator.id = b.booked_by`;
 
 async function getProperty(propertyId: string, db: Queryable = pool): Promise<Property> {
   const result = await db.query<Property>('SELECT id, timezone, currency FROM properties WHERE id = $1', [propertyId]);
@@ -45,8 +51,15 @@ export async function listBookings(customerId: string): Promise<Booking[]> {
 }
 export async function listHotelBookings(propertyId: string, actorId: string) {
   await requireRole(propertyId, actorId);
-  return (await pool.query<Booking & { customerName: string; customerEmail: string }>(`${bookingSelect.replace('SELECT b.id,', 'SELECT u.full_name AS "customerName", u.email AS "customerEmail", b.id,')}
-    JOIN users u ON u.id = b.customer_id WHERE b.property_id = $1 ORDER BY b.check_in DESC, b.created_at DESC LIMIT 100`, [propertyId])).rows;
+  return (await pool.query<Booking>(`${staffBookingSelect}
+    WHERE b.property_id = $1 ORDER BY b.check_in DESC, b.created_at DESC LIMIT 100`, [propertyId])).rows;
+}
+
+export async function getHotelBooking(propertyId: string, actorId: string, bookingId: string) {
+  await requireRole(propertyId, actorId);
+  const result = await pool.query<Booking>(`${staffBookingSelect} WHERE b.property_id = $1 AND b.id = $2`, [propertyId, bookingId]);
+  if (!result.rows[0]) throw new HttpError(404, 'Reservation not found.');
+  return result.rows[0];
 }
 
 export interface BookingInput extends Stay { roomTypeId: string; expectedTotalMinor: number; currency: string; idempotencyKey: string; }
@@ -61,28 +74,82 @@ export async function createBooking(propertyId: string, customerId: string, data
       if (previous.rows[0].request_hash !== requestHash) throw new HttpError(409, 'This booking request was already used for different details.');
       return { booking: (await client.query<Booking>(`${bookingSelect} WHERE b.id = $1`, [previous.rows[0].id])).rows[0]!, created: false };
     }
-    const property = await getProperty(propertyId, client);
-    validateStay(data, property.timezone);
-    // Serialize allocation per room type, then re-read inventory in this transaction.
-    const roomType = await client.query<{ max_guests: number; nightly_rate_minor: number | null }>('SELECT max_guests, nightly_rate_minor FROM room_types WHERE property_id = $1 AND id = $2 FOR UPDATE', [propertyId, data.roomTypeId]);
-    const type = roomType.rows[0];
-    if (!type) throw new HttpError(404, 'Room type not found.');
-    if (data.guests > type.max_guests) throw new HttpError(400, 'This room cannot accommodate that many guests.');
-    if (type.nightly_rate_minor === null) throw new HttpError(409, 'This room does not have a configured rate.');
-    const total = type.nightly_rate_minor * nightCount(data);
-    if (total !== data.expectedTotalMinor || property.currency !== data.currency) throw new HttpError(409, 'The price has changed. Refresh availability and review the new total.');
-    const rooms = await client.query<{ id: string }>(`SELECT r.id FROM rooms r WHERE r.property_id = $1 AND r.room_type_id = $2
-      AND r.operational_status = 'active' AND NOT EXISTS (SELECT 1 FROM booking_rooms br WHERE br.room_id = r.id AND br.active
-        AND daterange(br.check_in, br.check_out, '[)') && daterange($3::date, $4::date, '[)'))
-      ORDER BY r.number LIMIT 1 FOR UPDATE OF r`, [propertyId, data.roomTypeId, data.checkIn, data.checkOut]);
-    if (!rooms.rows[0]) throw new HttpError(409, 'These dates are no longer available. Please choose another room or stay.');
+    // Use the same lock order as staff bookings and membership changes.
+    await lockProperty(client, propertyId);
+    const { property, type, total, roomId } = await allocateRoom(client, propertyId, data);
     const created = await client.query<{ id: string }>(`INSERT INTO bookings(property_id, customer_id, room_type_id, check_in, check_out, guests, nightly_rate_minor, total_minor, currency, idempotency_key, request_hash)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [propertyId, customerId, data.roomTypeId, data.checkIn, data.checkOut, data.guests, type.nightly_rate_minor, total, property.currency, data.idempotencyKey, requestHash]);
     const id = created.rows[0]!.id;
-    await client.query('INSERT INTO booking_rooms(booking_id, property_id, room_id, check_in, check_out) VALUES ($1, $2, $3, $4, $5)', [id, propertyId, rooms.rows[0].id, data.checkIn, data.checkOut]);
+    await client.query('INSERT INTO booking_rooms(booking_id, property_id, room_id, check_in, check_out) VALUES ($1, $2, $3, $4, $5)', [id, propertyId, roomId, data.checkIn, data.checkOut]);
     await client.query("INSERT INTO notification_outbox(booking_id, event) VALUES ($1, 'booking.confirmed')", [id]);
     return { booking: (await client.query<Booking>(`${bookingSelect} WHERE b.id = $1`, [id])).rows[0]!, created: true };
+  });
+}
+
+async function allocateRoom(client: PoolClient, propertyId: string, data: BookingInput, selectedRoomId?: string) {
+  const property = await getProperty(propertyId, client);
+  validateStay(data, property.timezone);
+  // Serialize allocation per room type, then re-read inventory in this transaction.
+  const roomType = await client.query<{ max_guests: number; nightly_rate_minor: number | null }>('SELECT max_guests, nightly_rate_minor FROM room_types WHERE property_id = $1 AND id = $2 FOR UPDATE', [propertyId, data.roomTypeId]);
+  const type = roomType.rows[0];
+  if (!type) throw new HttpError(404, 'Room type not found.');
+  if (data.guests > type.max_guests) throw new HttpError(400, 'This room cannot accommodate that many guests.');
+  if (type.nightly_rate_minor === null) throw new HttpError(409, 'This room does not have a configured rate.');
+  const total = type.nightly_rate_minor * nightCount(data);
+  if (total !== data.expectedTotalMinor || property.currency !== data.currency) throw new HttpError(409, 'The price has changed. Refresh availability and review the new total.');
+  const rooms = await client.query<{ id: string }>(`SELECT r.id FROM rooms r WHERE r.property_id = $1 AND r.room_type_id = $2
+    AND r.operational_status = 'active' AND NOT EXISTS (SELECT 1 FROM booking_rooms br WHERE br.room_id = r.id AND br.active
+      AND daterange(br.check_in, br.check_out, '[)') && daterange($3::date, $4::date, '[)'))
+    AND ($5::uuid IS NULL OR r.id = $5)
+    ORDER BY r.number LIMIT 1 FOR UPDATE OF r`, [propertyId, data.roomTypeId, data.checkIn, data.checkOut, selectedRoomId ?? null]);
+  if (!rooms.rows[0]) throw new HttpError(409, 'These dates are no longer available. Please choose another room or stay.');
+  return { property, type, total, roomId: rooms.rows[0].id };
+}
+
+export async function staffBookingAvailability(propertyId: string, actorId: string, stay: Stay): Promise<StaffBookingAvailability> {
+  await requireRole(propertyId, actorId);
+  const property = await getProperty(propertyId);
+  validateStay(stay, property.timezone);
+  const nights = nightCount(stay);
+  const result = await pool.query<StaffBookingAvailability['rooms'][number]>(`
+    SELECT r.id AS "roomId", r.number AS "roomNumber", t.id AS "roomTypeId", t.name AS "roomTypeName",
+      t.max_guests AS "maxGuests", t.nightly_rate_minor AS "nightlyRateMinor"
+    FROM rooms r JOIN room_types t ON t.id = r.room_type_id AND t.property_id = r.property_id
+    WHERE r.property_id = $1 AND r.operational_status = 'active'
+      AND t.max_guests >= $4 AND t.nightly_rate_minor IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM booking_rooms br WHERE br.room_id = r.id AND br.active
+        AND daterange(br.check_in, br.check_out, '[)') && daterange($2::date, $3::date, '[)'))
+    ORDER BY t.max_guests, t.name, r.number`, [propertyId, stay.checkIn, stay.checkOut, stay.guests]);
+  return { nights, currency: property.currency, rooms: result.rows.map(room => ({ ...room, totalMinor: room.nightlyRateMinor * nights })) };
+}
+
+export async function createStaffBooking(propertyId: string, actorId: string, data: StaffBookingInput) {
+  const requestHash = digest(JSON.stringify([propertyId, data.roomTypeId, data.roomId, data.checkIn, data.checkOut, data.guests,
+    data.expectedTotalMinor, data.currency, data.guest.fullName, data.guest.email ?? null, data.guest.phone ?? null]));
+  return transaction(async client => {
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`staff:${actorId}:${data.idempotencyKey}`]);
+    await lockProperty(client, propertyId);
+    // A retry still requires current access. Contact details never grant account ownership.
+    await requireRole(propertyId, actorId, false, client);
+    const previous = await client.query<{ id: string; request_hash: string }>(
+      'SELECT id, request_hash FROM bookings WHERE booked_by = $1 AND idempotency_key = $2', [actorId, data.idempotencyKey]);
+    if (previous.rows[0]) {
+      if (previous.rows[0].request_hash !== requestHash) throw new HttpError(409, 'This booking request was already used for different details.');
+      return { booking: (await client.query<Booking>(`${staffBookingSelect} WHERE b.id = $1`, [previous.rows[0].id])).rows[0]!, created: false };
+    }
+    const { property, type, total, roomId } = await allocateRoom(client, propertyId, data, data.roomId);
+    const created = await client.query<{ id: string }>(`INSERT INTO bookings(property_id, booked_by, guest_name, guest_email, guest_phone,
+      room_type_id, check_in, check_out, guests, nightly_rate_minor, total_minor, currency, idempotency_key, request_hash)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
+    [propertyId, actorId, data.guest.fullName, data.guest.email ?? null, data.guest.phone ?? null,
+      data.roomTypeId, data.checkIn, data.checkOut, data.guests, type.nightly_rate_minor, total, property.currency, data.idempotencyKey, requestHash]);
+    const id = created.rows[0]!.id;
+    await client.query('INSERT INTO booking_rooms(booking_id, property_id, room_id, check_in, check_out) VALUES ($1, $2, $3, $4, $5)',
+      [id, propertyId, roomId, data.checkIn, data.checkOut]);
+    await client.query("INSERT INTO notification_outbox(booking_id, event) VALUES ($1, 'booking.confirmed')", [id]);
+    await audit(client, propertyId, actorId, 'booking.created_by_staff', id);
+    return { booking: (await client.query<Booking>(`${staffBookingSelect} WHERE b.id = $1`, [id])).rows[0]!, created: true };
   });
 }
 
@@ -92,7 +159,7 @@ export async function transitionBooking(id: string, actorId: string, action: 'ca
       await lockProperty(client, propertyId);
       await requireRole(propertyId, actorId, false, client);
     }
-    const result = await client.query<{ property_id: string; customer_id: string; status: string; check_in: string; check_out: string; timezone: string }>(`
+    const result = await client.query<{ property_id: string; customer_id: string | null; status: string; check_in: string; check_out: string; timezone: string }>(`
       SELECT b.property_id, b.customer_id, b.status, b.check_in::text, b.check_out::text, p.timezone
       FROM bookings b JOIN properties p ON p.id = b.property_id WHERE b.id = $1 FOR UPDATE OF b`, [id]);
     const booking = result.rows[0];

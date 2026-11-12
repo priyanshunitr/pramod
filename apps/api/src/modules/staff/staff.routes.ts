@@ -8,9 +8,30 @@ import { digest, rateLimit, token } from '../auth/security.js';
 import { audit, lockProperty, requireRole } from './permissions.js';
 import { readStaffAccess } from './access.js';
 import { env } from '../../config/env.js';
+import { createStaffBooking, getHotelBooking, staffBookingAvailability } from '../bookings/bookings.repository.js';
+import { staffBookingSchema } from '../bookings/staff-booking.schema.js';
+import { staySchema } from '../bookings/stay.js';
 
 export const staffRouter = Router({ mergeParams: true });
 staffRouter.use(requireUser);
+
+staffRouter.get('/bookings/:bookingId', async (request, response) => {
+  response.json({ data: await getHotelBooking(propertyParam(request), account(response).id, parse(uuid, request.params.bookingId)) });
+});
+
+staffRouter.get('/booking-availability', async (request, response) => {
+  response.json({ data: await staffBookingAvailability(propertyParam(request), account(response).id, parse(staySchema.strict(), request.query)) });
+});
+
+staffRouter.post('/bookings', async (request, response) => {
+  const propertyId = propertyParam(request);
+  const actorId = account(response).id;
+  await requireRole(propertyId, actorId);
+  const data = parse(staffBookingSchema, request.body);
+  await rateLimit(`staff-booking:${actorId}`, 30, 900);
+  const result = await createStaffBooking(propertyId, actorId, data);
+  response.status(result.created ? 201 : 200).json({ data: result.booking });
+});
 
 staffRouter.get('/speech/status', async (request, response) => {
   await requireRole(propertyParam(request), account(response).id);

@@ -300,6 +300,87 @@ test('PostgreSQL integration: accounts, hotel permissions, and reservation integ
     assert.equal((await call(bookingPath, undefined, receptionist.cookie)).status, 403);
   });
 
+  await t.test('owners and receptionists book named guests without accounts, with scoped access and safe retries', async () => {
+    const staffHotel = (await pool.query("INSERT INTO properties(slug, name) VALUES ('staff-booking-hotel', 'Staff Booking Hotel') RETURNING id")).rows[0].id;
+    await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [staffHotel, owner.id, receptionist.id]);
+    const type = (await pool.query("INSERT INTO room_types(property_id, name, max_guests, nightly_rate_minor) VALUES ($1, 'Walk-in Suite', 2, 450000) RETURNING id", [staffHotel])).rows[0].id;
+    const rooms = (await pool.query("INSERT INTO rooms(property_id, room_type_id, number, operational_status) VALUES ($1, $2, 'W101', 'active'), ($1, $2, 'W102', 'out_of_service'), ($1, $2, 'W103', 'active') RETURNING id", [staffHotel, type])).rows;
+    const base = `/properties/${staffHotel}/staff`;
+    const available = `${base}/booking-availability?checkIn=${today}&checkOut=${future(1)}&guests=2`;
+    const booking = { checkIn: today, checkOut: future(1), guests: 2, roomId: rooms[2].id, roomTypeId: type,
+      expectedTotalMinor: 450000, currency: 'INR', idempotencyKey: randomUUID(), guest: { fullName: 'Walk-in Guest', phone: '+91 98765 43210' } };
+    const usersBefore = (await pool.query('SELECT count(*)::int AS count FROM users')).rows[0].count;
+    for (const cookie of ['', customer.cookie, outsider.cookie]) {
+      assert.equal((await call(available, undefined, cookie)).status, cookie ? 403 : 401);
+      assert.equal((await call(`${base}/bookings`, booking, cookie)).status, cookie ? 403 : 401);
+    }
+    const quote = await call(available, undefined, receptionist.cookie);
+    assert.equal(quote.status, 200);
+    assert.deepEqual(quote.payload.data.rooms.map((room: any) => room.roomNumber), ['W101', 'W103']);
+    assert.ok(quote.payload.data.rooms.every((room: any) => room.totalMinor === 450000));
+    for (const [change, status] of [
+      [{ guest: { fullName: 'Missing Contact' } }, 400], [{ guest: { fullName: 'Invalid Phone', phone: 'not-a-number' } }, 400],
+      [{ guest: { fullName: 'Invalid Email', email: 'broken' } }, 400], [{ checkIn: future(-1) }, 400], [{ checkOut: today }, 400],
+      [{ guests: 3 }, 400], [{ expectedTotalMinor: 1 }, 409], [{ currency: 'USD' }, 409],
+      [{ roomId: rooms[1].id }, 409], [{ roomId: room }, 409], [{ roomTypeId: roomType }, 404],
+      [{ customerId: customer.id }, 400], [{ bookedBy: customer.id }, 400],
+    ] as const) assert.equal((await call(`${base}/bookings`, { ...booking, ...change, idempotencyKey: randomUUID() }, owner.cookie)).status, status);
+    const created = await call(`${base}/bookings`, booking, receptionist.cookie);
+    assert.equal(created.status, 201, JSON.stringify(created.payload));
+    const id = created.payload.data.id;
+    assert.equal(created.payload.data.roomNumber, 'W103');
+    assert.equal(created.payload.data.customerName, 'Walk-in Guest');
+    assert.equal(created.payload.data.customerPhone, '+91 98765 43210');
+    assert.equal(created.payload.data.customerEmail, null);
+    assert.equal(created.payload.data.bookedByName, 'Receptionist');
+    const stored = (await pool.query('SELECT customer_id, booked_by FROM bookings WHERE id = $1', [id])).rows[0];
+    assert.deepEqual(stored, { customer_id: null, booked_by: receptionist.id });
+    const retry = await call(`${base}/bookings`, booking, receptionist.cookie);
+    assert.equal(retry.status, 200); assert.equal(retry.payload.data.id, id);
+    assert.equal((await call(`${base}/bookings`, { ...booking, guest: { ...booking.guest, fullName: 'Changed Guest' } }, receptionist.cookie)).status, 409);
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM audit_events WHERE subject_id = $1 AND action = 'booking.created_by_staff'", [id])).rows[0].count, 1);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM notification_outbox WHERE booking_id = $1', [id])).rows[0].count, 1);
+    const ownerBooking = await call(`${base}/bookings`, { ...booking, roomId: rooms[0].id, idempotencyKey: randomUUID(), guest: { fullName: 'Visiting Guest', email: customer.email.toUpperCase() } }, owner.cookie);
+    assert.equal(ownerBooking.status, 201);
+    assert.equal(ownerBooking.payload.data.customerEmail, customer.email);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM users')).rows[0].count, usersBefore);
+    assert.equal((await pool.query('SELECT full_name FROM users WHERE id = $1', [customer.id])).rows[0].full_name, 'Customer');
+    assert.ok(!(await call('/bookings', undefined, customer.cookie)).payload.data.some((booking: any) => booking.id === ownerBooking.payload.data.id));
+    assert.equal((await call(`/bookings/${ownerBooking.payload.data.id}/cancel`, {}, customer.cookie)).status, 404);
+    assert.equal((await call(`${base}/bookings/${id}`, undefined, owner.cookie)).payload.data.customerName, 'Walk-in Guest');
+    assert.equal((await call(`/properties/${otherHotel}/staff/bookings/${id}`, undefined, outsider.cookie)).status, 404);
+    const list = await call(`/properties/${staffHotel}/bookings`, undefined, receptionist.cookie);
+    assert.equal(list.payload.data.length, 2);
+    const report = await call(`/properties/${staffHotel}/owner/dashboard?from=${today}&to=${future(1)}`, undefined, owner.cookie);
+    assert.equal(report.payload.data.summary.reservations, 2);
+    assert.equal(report.payload.data.summary.availableRooms, 0);
+    assert.ok(report.payload.data.bookings.some((booking: any) => booking.id === id && booking.customerName === 'Walk-in Guest'));
+    assert.equal((await call(available, undefined, owner.cookie)).payload.data.rooms.length, 0);
+    assert.equal((await call(`/properties/${staffHotel}/bookings/${id}/check-in`, {}, receptionist.cookie)).status, 200);
+    assert.equal((await call(`/properties/${staffHotel}/bookings/${id}/check-out`, {}, receptionist.cookie)).status, 200);
+    assert.equal((await call(`${base}/bookings`, booking, receptionist.cookie)).payload.data.status, 'checked_out');
+    assert.equal((await call(available, undefined, owner.cookie)).payload.data.rooms.length, 1);
+    await pool.query('UPDATE staff_memberships SET active = false WHERE property_id = $1 AND user_id = $2', [staffHotel, receptionist.id]);
+    assert.equal((await call(`${base}/bookings`, booking, receptionist.cookie)).status, 403);
+    assert.equal((await call(available, undefined, receptionist.cookie)).status, 403);
+  });
+
+  await t.test('guest, reception and owner booking requests cannot take the same last room', async () => {
+    const raceHotel = (await pool.query("INSERT INTO properties(slug, name) VALUES ('staff-race-hotel', 'Staff Race Hotel') RETURNING id")).rows[0].id;
+    await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [raceHotel, owner.id, receptionist.id]);
+    const type = (await pool.query("INSERT INTO room_types(property_id, name, max_guests, nightly_rate_minor) VALUES ($1, 'Last Room', 2, 100000) RETURNING id", [raceHotel])).rows[0].id;
+    const selectedRoom = (await pool.query("INSERT INTO rooms(property_id, room_type_id, number) VALUES ($1, $2, 'LAST') RETURNING id", [raceHotel, type])).rows[0].id;
+    const common = { checkIn: future(2), checkOut: future(4), guests: 2, roomTypeId: type, expectedTotalMinor: 200000, currency: 'INR' };
+    const staff = { ...common, roomId: selectedRoom, guest: { fullName: 'Race Guest', email: 'race@example.test' } };
+    const results = await Promise.all([
+      call(`/properties/${raceHotel}/staff/bookings`, { ...staff, idempotencyKey: randomUUID() }, owner.cookie),
+      call(`/properties/${raceHotel}/staff/bookings`, { ...staff, idempotencyKey: randomUUID() }, receptionist.cookie),
+      call(`/properties/${raceHotel}/bookings`, { ...common, idempotencyKey: randomUUID() }, outsider.cookie),
+    ]);
+    assert.deepEqual(results.map(result => result.status).sort(), [201, 409, 409]);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM booking_rooms WHERE property_id = $1 AND active', [raceHotel])).rows[0].count, 1);
+  });
+
   await t.test('owner reports enforce access and reconcile room inventory, dates, and booking values', async () => {
     const reportHotel = (await pool.query<{ id: string }>("INSERT INTO properties(slug, name) VALUES ('report-hotel', 'Report Hotel') RETURNING id")).rows[0]!.id;
     await pool.query("INSERT INTO staff_memberships(property_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'receptionist')", [reportHotel, owner.id, receptionist.id]);

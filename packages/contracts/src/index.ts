@@ -24,7 +24,20 @@ export interface Booking {
   checkIn: string; checkOut: string; guests: number; roomNumber: string;
   status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
   nightlyRateMinor: number; totalMinor: number; currency: string;
-  customerName?: string; customerEmail?: string;
+  customerName?: string; customerEmail?: string | null; customerPhone?: string | null;
+  bookedByName?: string | null;
+}
+
+export interface StaffBookingInput {
+  checkIn: string; checkOut: string; guests: number;
+  roomTypeId: string; roomId: string; expectedTotalMinor: number; currency: string; idempotencyKey: string;
+  guest: { fullName: string; email?: string; phone?: string };
+}
+
+export interface StaffBookingAvailability {
+  nights: number; currency: string;
+  rooms: { roomId: string; roomNumber: string; roomTypeId: string; roomTypeName: string;
+    maxGuests: number; nightlyRateMinor: number; totalMinor: number }[];
 }
 
 export interface Availability {

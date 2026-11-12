@@ -35,10 +35,12 @@ export async function ownerDashboard(propertyId: string, actorId: string, query:
         b.check_in::text AS "checkIn", b.check_out::text AS "checkOut", b.guests, b.status,
         b.nightly_rate_minor AS "nightlyRateMinor", b.total_minor::float8 AS "totalMinor", b.currency,
         r.id AS "roomId", r.number AS "roomNumber", br.active AS "allocationActive",
-        u.full_name AS "customerName", u.email AS "customerEmail"
+        COALESCE(b.guest_name, u.full_name) AS "customerName", COALESCE(b.guest_email, u.email) AS "customerEmail",
+        COALESCE(b.guest_phone, u.phone) AS "customerPhone", creator.full_name AS "bookedByName"
       FROM bookings b JOIN booking_rooms br ON br.booking_id = b.id AND br.property_id = b.property_id
       JOIN rooms r ON r.id = br.room_id JOIN room_types t ON t.id = b.room_type_id
-      JOIN users u ON u.id = b.customer_id
+      LEFT JOIN users u ON u.id = b.customer_id
+      LEFT JOIN users creator ON creator.id = b.booked_by
       WHERE b.property_id = $1 AND ($2::uuid IS NULL OR b.room_type_id = $2)
         AND ((b.check_in < $4::date AND b.check_out > $3::date)
           OR b.check_in = $5::date OR b.check_out = $5::date OR b.status = 'checked_in')
