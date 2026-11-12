@@ -44,7 +44,7 @@ The optional demo seed creates one placeholder hotel, three room types, and thre
 | `/account` | Customer registration, sign-in/out, short-lived JWT authentication, own reservations and cancellation |
 | `/staff` | Links to the separate reception and owner workspaces |
 
-The table above describes the guest app. Reception has `/` for the daily front desk, `/reservations` for searchable stays and check-in/check-out, and `/availability` for date-based room availability and rates. It supports account registration/sign-in, invitation acceptance, and receptionist access requests when the account does not yet have hotel access. Reception lists use the API's latest 100 reservations; a notice appears when that limit is reached.
+The table above describes the guest app. Reception has `/` for the daily front desk, `/book` for booking a room on a guest's behalf, `/reservations` for searchable stays and check-in/check-out, and `/availability` for date-based room availability and rates. It supports account registration/sign-in, invitation acceptance, and receptionist access requests when the account does not yet have hotel access. Reception lists use the API's latest 100 reservations; a notice appears when that limit is reached. A direct reservation link loads that booking separately.
 
 Both staff apps share Pramod's warm neutral palette, sans-serif typography, rounded controls, responsive navigation, and framed surfaces. At `/preview/`, each app offers an explicitly labeled sample workspace with fictional reservations and rooms. Preview actions run only in memory, make no API requests, reset on reload, and never grant real hotel access. Normal routes retain JWT authentication and server-checked staff memberships. See [staff workspace flows](docs/staff-workspaces.md).
 
@@ -55,6 +55,7 @@ The owner app requires an active owner membership and provides:
 | `/` | Live occupancy, available rooms, booking value, reservation totals, today's arrivals/departures, and nightly outlook |
 | `/availability` | Date and room-type filters, a nightly room calendar, room search/status filter, per-room occupancy and reservation details |
 | `/reservations` | Search, status filters, dashboard drilldowns, and cancellation/check-in/check-out |
+| `/book` | Guest contact details, stay dates, exact available room selection, price review and confirmation |
 | `/team` | Approve requests, invite receptionists/owners, and remove access |
 
 Metric cards open their underlying rooms or reservations. Availability filters use inclusive arrival and exclusive departure dates, with a 1–30 night window. Current occupancy is separate from future reserved inventory. Booking value excludes cancellations, counts only nights in the selected window, and keeps currencies separate; it does not represent collected payments. See [the reporting contract](docs/owner-reporting.md) for exact definitions. Worker metrics and alerts are deferred.
@@ -64,6 +65,8 @@ The customer experience is public. Account creation creates a customer account f
 Search checks PostgreSQL inventory for the requested dates. Reservation confirmation recalculates the price and allocates a physical room in a transaction. The demo rates are stored in `room_types.nightly_rate_minor`, in paise for INR. The booking stores its agreed rate, currency, and room total; a changed price requires the customer to refresh and review it. No taxes, payment processing, or financial settlement is implemented.
 
 Saved stay plans remain browser-local and do not hold inventory. Confirmed reservations are stored in PostgreSQL and appear under the customer's account. The frontend sends a booking idempotency key and retains it in session storage until the request succeeds, so retrying an interrupted request returns the original reservation. Account credentials and JWTs are never stored in local storage.
+
+Owners and approved receptionists can also reserve a room for a guest from **New reservation**. Enter the guest's name and a phone number or email, choose dates and capacity, select an available physical room, and confirm the server quote. These reservations store guest contact details and the creating staff member without creating an account or attaching a matching-email account. They appear in staff reservation lists, room availability, and owner reports. The confirmation rechecks current staff access, price and availability under property/room-type locks; database constraints prevent competing bookings. An uncertain response keeps the form details and idempotency key fixed for a safe retry while the page remains open. No payment is collected; check-in remains a separate action.
 
 The homepage interior filmstrip and room collection use `featuredRooms` in `apps/guest/src/config/hotel.ts` for names, photos, capacities, and illustrative starting rates. They do not fetch the database catalog. The catalog provider mounts only for room search, room details, and stay review, where live rates and availability still come from the API. Featured room slugs resolve to the matching catalog name on the detail page; existing database-ID links continue to work.
 
@@ -167,7 +170,7 @@ For a guest preview through ngrok, run `ngrok http http://127.0.0.1:<guest-port>
 
 The initial migration creates `properties`, `users`, `staff_memberships`, `room_types`, and `rooms`. Each room belongs to a property, and a composite foreign key prevents assigning a room type from another property.
 
-Owner and receptionist roles are property-specific staff memberships. Customers see and cancel only their own reservations. Owners approve receptionist requests, create email-bound invitations, and revoke access. Receptionists can view hotel reservations and check guests in/out. Every protected operation checks the current database membership; the frontend role is never authoritative. The last active owner cannot be removed through the API.
+Owner and receptionist roles are property-specific staff memberships. Customers see and cancel only their own reservations. Owners approve receptionist requests, create email-bound invitations, and revoke access. Both staff roles can create guest reservations, view hotel reservations, and check guests in/out. Every protected operation checks the current database membership; the frontend role is never authoritative. The last active owner cannot be removed through the API.
 
 The account migration adds password hashes, shared rate limits, staff requests/invitations, audit events, bookings, physical room allocations, and a notification outbox. Migration `004_stateless_auth.sql` removes the obsolete opaque-session table introduced by migration 002; existing accounts and hotel data remain intact. Composite foreign keys keep room types, rooms, and bookings within the same hotel. A PostgreSQL GiST exclusion constraint prevents overlapping active allocations even under concurrent requests. Stays use `[check_in, check_out)` date ranges in the property's timezone, so checkout-day arrivals are allowed. The API currently supports one room per reservation, up to six guests subject to room capacity, and one to thirty nights. Room types without configured rates cannot be reserved.
 
@@ -234,6 +237,9 @@ The initial deployment remains one modular Express service plus PostgreSQL. Addi
 | `POST /api/properties/:propertyId/bookings` | Customer reservation with authoritative price and idempotency key |
 | `GET /api/bookings`; `POST /api/bookings/:id/cancel` | Own reservations and cancellation |
 | `GET /api/properties/:propertyId/bookings` | Hotel reservations, restricted to current staff |
+| `GET /api/properties/:propertyId/staff/booking-availability` | Individual available rooms and server quotes for a staff-selected stay |
+| `POST /api/properties/:propertyId/staff/bookings` | Staff reservation with guest contact details, exact room and idempotency key |
+| `GET /api/properties/:propertyId/staff/bookings/:bookingId` | One reservation, scoped to current hotel staff |
 | `POST /api/properties/:propertyId/bookings/:id/:action` | Staff `check-in`, `check-out`, and `cancel` |
 | `/api/properties/:propertyId/staff/*` | Access, requests/review, invitations/accept, team/revoke, room inventory |
 | `GET /api/properties/:propertyId/owner/dashboard` | Owner-only report with optional `from`, `to`, and `roomTypeId` filters |

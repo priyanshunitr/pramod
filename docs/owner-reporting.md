@@ -16,6 +16,8 @@ Optional parameters: `from` (inclusive), `to` (exclusive), and `roomTypeId`. Dat
 
 Room rows expose current occupancy separately from future allocation. Date ranges are half-open: a checkout on a date allows a new check-in on that date. Cancelled and checked-out allocations no longer block availability. Reservations in the response cover the selected window, today's arrivals/departures, and current checked-in stays so every metric can link to its underlying records without the reception list's 100-row limit.
 
+Staff-created reservations count in the same metrics and calendars as customer reservations. Their guest name and contact details come from the booking snapshot, and the reservation details identify the creating staff member. A guest account is not required.
+
 ## Monthly booked rooms
 
 `GET /api/properties/:propertyId/owner/booked-rooms?month=YYYY-MM` provides a full calendar month, including zero-booking days. Past and future months are supported independently of the dashboard's 1–30-night stay window. Optional `roomTypeId` applies the selected room-type filter; it must belong to the hotel. The endpoint requires current owner membership and uses a read-only, repeatable-read transaction with `Cache-Control: no-store`.
