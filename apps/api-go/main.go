@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 	"github.com/joho/godotenv"
+	"pramod/api-go/controllers"
 )
 
 func main() {
@@ -27,6 +28,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/health", healthHandler)
+	mux.HandleFunc("GET /api/ready", controllers.ReadyHandler(db))
 
 	server := &http.Server{
 		Addr:              "127.0.0.1:4001",
