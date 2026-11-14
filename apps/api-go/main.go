@@ -29,6 +29,8 @@ func main() {
 
 	mux.HandleFunc("GET /api/health", healthHandler)
 	mux.HandleFunc("GET /api/ready", controllers.ReadyHandler(db))
+	mux.HandleFunc("GET /api/properties/{slug}", controllers.PropertyHandler(db))
+	mux.HandleFunc("GET /api/properties/{propertyId}/availability",	controllers.AvailabilityHandler(db),)
 
 	server := &http.Server{
 		Addr:              "127.0.0.1:4001",
