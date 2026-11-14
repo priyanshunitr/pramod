@@ -7,6 +7,7 @@ import (
 	"time"
 	"github.com/joho/godotenv"
 	"pramod/api-go/controllers"
+	"pramod/api-go/services"
 )
 
 func main() {
@@ -24,13 +25,29 @@ func main() {
 
 	log.Println("Connected to PostgreSQL")
 
+		authService, err := services.NewAuthService(db)
+	if err != nil {
+		log.Printf("Authentication configuration failed: %v", err)
+		return
+	}
+	
+	authController, err := controllers.NewAuthController(authService)
+	if err != nil {
+		log.Printf("Authentication controller setup failed: %v", err)
+		return
+	}
+
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/health", healthHandler)
 	mux.HandleFunc("GET /api/ready", controllers.ReadyHandler(db))
 	mux.HandleFunc("GET /api/properties/{slug}", controllers.PropertyHandler(db))
-	mux.HandleFunc("GET /api/properties/{propertyId}/availability",	controllers.AvailabilityHandler(db),)
+	mux.HandleFunc("GET /api/properties/{propertyId}/availability",	controllers.AvailabilityHandler(db))
+	mux.HandleFunc("POST /api/auth/register", authController.Register)
+	mux.HandleFunc("POST /api/auth/login", authController.Login)
+	mux.HandleFunc("POST /api/auth/logout", authController.Logout)
+	mux.HandleFunc("GET /api/auth/me", authController.Me)
 
 	server := &http.Server{
 		Addr:              "127.0.0.1:4001",
