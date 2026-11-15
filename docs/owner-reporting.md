@@ -16,6 +16,8 @@ Optional parameters: `from` (inclusive), `to` (exclusive), and `roomTypeId`. Dat
 
 Room rows expose current occupancy separately from future allocation. Date ranges are half-open: a checkout on a date allows a new check-in on that date. Cancelled and checked-out allocations no longer block availability. Reservations in the response cover the selected window, today's arrivals/departures, and current checked-in stays so every metric can link to its underlying records without the reception list's 100-row limit.
 
+The room calendar joins consecutive nights belonging to the same reservation into one clickable bar. Bars are clipped to the selected window and show the number of visible nights. Adjacent reservations remain separate even when their dates touch; checkout nights are not included. Available and out-of-service dates retain their individual cells, and an out-of-service room's reservations keep their offline styling.
+
 Staff-created reservations count in the same metrics and calendars as customer reservations. Their guest name and contact details come from the booking snapshot, and the reservation details identify the creating staff member. A guest account is not required.
 
 ## Monthly booked rooms
