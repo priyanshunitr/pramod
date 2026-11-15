@@ -101,9 +101,9 @@ export function StaffBookingPage() {
       <fieldset className="staff-booking-fields" disabled={locked}><legend className="sr-only">Guest and stay details</legend>
         <section className="staff-booking-panel"><div className="booking-section-title"><UserRound size={19} /><div><p className="eyebrow">01 / THE GUEST</p><h2>Who’s staying?</h2></div></div>
           <div className="booking-inputs"><label className="booking-full-field">Guest full name<input value={fullName} onChange={event => setFullName(event.target.value)} required minLength={2} maxLength={120} autoComplete="off" placeholder="Full name" /></label>
-            <label>Phone<input type="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={30} autoComplete="off" placeholder="e.g. +91 98765 43210" /></label>
-            <label>Email<input type="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} autoComplete="off" placeholder="guest@example.com" /></label></div>
-          <p className="fine-print">Provide at least one contact method: phone or email.</p>
+            <label>Phone<input type="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={30} autoComplete="off" aria-describedby="guest-contact-help" placeholder="e.g. +91 98765 43210" /></label>
+            <label>Email (optional)<input type="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} autoComplete="off" aria-describedby="guest-contact-help" placeholder="guest@example.com" /></label></div>
+          <p className="fine-print" id="guest-contact-help">Email is optional. Provide a phone number if you leave it blank.</p>
         </section>
         <section className="staff-booking-panel"><div className="booking-section-title"><CalendarDays size={19} /><div><p className="eyebrow">02 / THE STAY</p><h2>Find their room.</h2></div></div>
           <div className="booking-inputs"><label>Check-in<input type="date" required min={today} value={checkIn} onChange={event => { setCheckIn(event.target.value); resetAvailability(); }} /></label>
